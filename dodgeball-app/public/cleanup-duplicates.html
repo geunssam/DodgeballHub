@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>중복 학생 데이터 정리</title>
+  <style>
+    body {
+      font-family: 'Pretendard', -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    button:hover {
+      background: #2563eb;
+    }
+    button.danger {
+      background: #ef4444;
+    }
+    button.danger:hover {
+      background: #dc2626;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      display: none;
+    }
+    .success {
+      background: #dcfce7;
+      border: 1px solid #86efac;
+      color: #166534;
+    }
+    .info {
+      background: #dbeafe;
+      border: 1px solid #93c5fd;
+      color: #1e40af;
+    }
+    .warning {
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      color: #92400e;
+    }
+    pre {
+      background: #f9fafb;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧹 중복 학생 데이터 정리</h1>
+    <p>localStorage에 저장된 중복 학생 데이터를 정리합니다.</p>
+
+    <div style="margin: 20px 0;">
+      <button onclick="checkDuplicates()">1️⃣ 중복 확인</button>
+      <button onclick="removeDuplicates()" class="danger">2️⃣ 중복 제거</button>
+      <button onclick="showAllStudents()">📋 전체 학생 보기</button>
+    </div>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    function showResult(message, type = 'info') {
+      const resultDiv = document.getElementById('result');
+      resultDiv.className = type;
+      resultDiv.innerHTML = message;
+      resultDiv.style.display = 'block';
+    }
+
+    function checkDuplicates() {
+      const studentsJson = localStorage.getItem('dodgeball_students');
+
+      if (!studentsJson) {
+        showResult('⚠️ localStorage에 학생 데이터가 없습니다.', 'warning');
+        return;
+      }
+
+      const students = JSON.parse(studentsJson);
+      const idCounts = {};
+      const duplicates = [];
+
+      // ID별로 개수 세기
+      students.forEach(student => {
+        idCounts[student.id] = (idCounts[student.id] || 0) + 1;
+      });
+
+      // 중복된 ID 찾기
+      Object.keys(idCounts).forEach(id => {
+        if (idCounts[id] > 1) {
+          duplicates.push({
+            id: id,
+            count: idCounts[id],
+            students: students.filter(s => s.id === id)
+          });
+        }
+      });
+
+      if (duplicates.length === 0) {
+        showResult(`
+          <h3>✅ 중복 없음</h3>
+          <p>총 <strong>${students.length}명</strong>의 학생 데이터가 정상입니다.</p>
+        `, 'success');
+      } else {
+        let html = `
+          <h3>⚠️ 중복 발견!</h3>
+          <p>총 <strong>${students.length}명</strong> 중 <strong>${duplicates.length}개의 중복 ID</strong>가 발견되었습니다.</p>
+          <pre>${JSON.stringify(duplicates.map(d => ({
+            id: d.id,
+            count: d.count,
+            name: d.students[0].name,
+            number: d.students[0].number
+          })), null, 2)}</pre>
+        `;
+        showResult(html, 'warning');
+      }
+    }
+
+    function removeDuplicates() {
+      const studentsJson = localStorage.getItem('dodgeball_students');
+
+      if (!studentsJson) {
+        showResult('⚠️ localStorage에 학생 데이터가 없습니다.', 'warning');
+        return;
+      }
+
+      const students = JSON.parse(studentsJson);
+      const beforeCount = students.length;
+
+      // Map을 사용해서 중복 제거 (첫 번째 것만 유지)
+      const uniqueStudents = Array.from(
+        new Map(students.map(s => [s.id, s])).values()
+      );
+
+      const afterCount = uniqueStudents.length;
+      const removedCount = beforeCount - afterCount;
+
+      // 백업 생성
+      const backupKey = `STUDENTS_BACKUP_${new Date().toISOString().replace(/[:.]/g, '-')}`;
+      localStorage.setItem(backupKey, studentsJson);
+
+      // 중복 제거된 데이터 저장
+      localStorage.setItem('dodgeball_students', JSON.stringify(uniqueStudents));
+
+      showResult(`
+        <h3>✅ 중복 제거 완료!</h3>
+        <p>
+          - 제거 전: <strong>${beforeCount}명</strong><br>
+          - 제거 후: <strong>${afterCount}명</strong><br>
+          - 제거된 중복: <strong>${removedCount}개</strong>
+        </p>
+        <p style="font-size: 12px; color: #666; margin-top: 10px;">
+          💾 백업: <code>${backupKey}</code>
+        </p>
+        <button onclick="location.reload()" style="margin-top: 10px;">🔄 페이지 새로고침</button>
+      `, 'success');
+    }
+
+    function showAllStudents() {
+      const studentsJson = localStorage.getItem('dodgeball_students');
+
+      if (!studentsJson) {
+        showResult('⚠️ localStorage에 학생 데이터가 없습니다.', 'warning');
+        return;
+      }
+
+      const students = JSON.parse(studentsJson);
+
+      const html = `
+        <h3>📋 전체 학생 목록 (${students.length}명)</h3>
+        <pre>${JSON.stringify(students.map(s => ({
+          id: s.id,
+          name: s.name,
+          number: s.number,
+          classId: s.classId
+        })), null, 2)}</pre>
+      `;
+
+      showResult(html, 'info');
+    }
+
+    // 페이지 로드 시 자동으로 중복 확인
+    window.addEventListener('load', () => {
+      checkDuplicates();
+    });
+  </script>
+</body>
+</html>
