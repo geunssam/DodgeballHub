@@ -9,7 +9,6 @@ import { getGameById, getStudents, updateGame, updateStudent, getStudentById } f
 import { DodgeballCourt } from '@/components/teacher/DodgeballCourt';
 import { ScoreBoard } from '@/components/teacher/ScoreBoard';
 import { TeamLineupTable } from '@/components/teacher/TeamLineupTable';
-import { CurrentTimeClock } from '@/components/teacher/CurrentTimeClock';
 
 export default function GamePlayPage() {
   const router = useRouter();
@@ -137,7 +136,7 @@ export default function GamePlayPage() {
       ...team,
       members: team.members.map(member => {
         if (member.studentId === studentId) {
-          const newLives = Math.max(0, Math.min(member.initialLives, member.currentLives + delta));
+          const newLives = Math.max(0, member.currentLives + delta);
           console.log(`  Old lives: ${member.currentLives}, New lives: ${newLives}`);
           return {
             ...member,
@@ -268,27 +267,24 @@ export default function GamePlayPage() {
   }
 
   return (
-    <main className="h-screen bg-gray-50 p-2 overflow-hidden">
-      <div className="max-w-7xl mx-auto h-full flex flex-col gap-2">
-        {/* 헤더: 네비게이션 + 현재 시각 */}
-        <div className="flex justify-between items-center flex-shrink-0">
-          <div className="flex gap-2">
-            <Link href="/teacher/dashboard">
-              <Button variant="outline" size="sm">
-                🏠 대시보드
-              </Button>
-            </Link>
-            <Link href="/teacher/dashboard">
-              <Button variant="outline" size="sm" onClick={() => {
-                // 대시보드의 경기 관리 탭으로 이동하도록 상태 저장
-                sessionStorage.setItem('dashboardView', 'games');
-              }}>
-                ⚾ 경기 관리
-              </Button>
-            </Link>
-          </div>
-
-          <CurrentTimeClock />
+    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+      <main className="flex-grow p-2 overflow-hidden">
+        <div className="max-w-7xl mx-auto h-full flex flex-col gap-2">
+        {/* 헤더: 네비게이션 */}
+        <div className="flex gap-2 flex-shrink-0">
+          <Link href="/teacher/dashboard">
+            <Button variant="outline" size="sm">
+              🏠 대시보드
+            </Button>
+          </Link>
+          <Link href="/teacher/dashboard">
+            <Button variant="outline" size="sm" onClick={() => {
+              // 대시보드의 경기 관리 탭으로 이동하도록 상태 저장
+              sessionStorage.setItem('dashboardView', 'games');
+            }}>
+              ⚾ 경기 관리
+            </Button>
+          </Link>
         </div>
 
         {/* 타이머 & 피구 코트 통합 영역 */}
@@ -329,7 +325,8 @@ export default function GamePlayPage() {
             />
           ))}
         </div>
-      </div>
-    </main>
+        </div>
+      </main>
+    </div>
   );
 }

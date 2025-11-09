@@ -60,7 +60,7 @@ export function TeamLineupTable({ team, students, gameRecords, onStatUpdate, onL
     </div>
   );
 
-  // 하트(목숨) 버튼 - Baseball 스타일 2버튼 ([-] [숫자+])
+  // 하트(목숨) 버튼 - 2버튼 구조 ([-] [숫자 클릭 시 +1])
   const LifeButton = ({
     studentId,
     value,
@@ -92,12 +92,7 @@ export function TeamLineupTable({ team, students, gameRecords, onStatUpdate, onL
           console.log('💚 Life plus clicked:', studentId, value);
           onLifeUpdate(studentId, 1);
         }}
-        disabled={value >= maxValue}
-        className={`h-6 text-xs px-2 rounded-r font-bold min-w-[40px] ${
-          value >= maxValue
-            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-            : 'bg-red-100 hover:bg-red-200 text-red-600'
-        }`}
+        className={`h-6 text-xs px-2 rounded-r font-bold min-w-[40px] bg-red-100 hover:bg-red-200 text-red-600`}
       >
         <span className="font-extrabold text-sm">{value}</span>
       </button>
@@ -136,21 +131,38 @@ export function TeamLineupTable({ team, students, gameRecords, onStatUpdate, onL
       case 'pink': return 'bg-pink-100 border-pink-500';
       case 'teal': return 'bg-teal-100 border-teal-500';
       case 'indigo': return 'bg-indigo-100 border-indigo-500';
-      case 'cyan': return 'bg-cyan-100 border-cyan-500';
+      case 'cyan': return 'bg-cyan-100 border-cyan-100';
       default: return 'bg-gray-100 border-gray-500';
+    }
+  };
+
+  // 팀명 파스텔톤 배경색
+  const getTeamNameBgClass = (color: string) => {
+    switch (color) {
+      case 'red': return 'bg-red-100';
+      case 'blue': return 'bg-blue-100';
+      case 'green': return 'bg-green-100';
+      case 'yellow': return 'bg-yellow-100';
+      case 'purple': return 'bg-purple-100';
+      case 'orange': return 'bg-orange-100';
+      case 'pink': return 'bg-pink-100';
+      case 'teal': return 'bg-teal-100';
+      case 'indigo': return 'bg-indigo-100';
+      case 'cyan': return 'bg-cyan-100';
+      default: return 'bg-gray-100';
     }
   };
 
   return (
     <div className={`${getTeamCardBackgroundClass(team.color)} rounded-lg shadow-lg border-2 flex flex-col h-[450px]`}>
       {/* 팀 정보 헤더 - Baseball 스타일 반투명 */}
-      <div className="bg-white/80 px-3 py-1.5 flex-shrink-0 flex items-center justify-between rounded-t-lg border-b-2 border-gray-200">
-        <h3 className="font-bold text-lg text-black flex-1 text-center">{team.name}</h3>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-black">팀원: {aliveCount}</span>
+      <div className="bg-white/80 px-4 py-4 flex-shrink-0 flex items-center justify-between rounded-t-lg border-b-2 border-gray-200">
+        <h3 className={`font-bold text-2xl text-black flex-1 text-center ${getTeamNameBgClass(team.color)} px-6 py-2 rounded-lg`}>{team.name}</h3>
+        <div className="flex items-center gap-3 ml-4">
+          <span className="text-xl font-bold text-black">팀원: {aliveCount}</span>
           <div className="flex items-center gap-1">
-            <span className="text-sm">❤️</span>
-            <span className="text-sm font-bold text-black">×{totalLives}</span>
+            <span className="text-xl">❤️</span>
+            <span className="text-xl font-bold text-black">×{totalLives}</span>
           </div>
         </div>
       </div>
@@ -202,7 +214,7 @@ export function TeamLineupTable({ team, students, gameRecords, onStatUpdate, onL
                     <LifeButton
                       studentId={member.studentId}
                       value={member.currentLives}
-                      maxValue={10}
+                      maxValue={99}
                     />
                   </td>
                   <td className="text-center align-middle">
