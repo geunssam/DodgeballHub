@@ -270,19 +270,28 @@ export default function GamePlayPage() {
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       <main className="flex-grow p-2 overflow-hidden">
         <div className="max-w-7xl mx-auto h-full flex flex-col gap-2">
-        {/* 헤더: 네비게이션 */}
-        <div className="flex gap-2 flex-shrink-0">
+        {/* 헤더: 네비게이션 - management 페이지 스타일 */}
+        <div className="flex gap-3 flex-shrink-0">
           <Link href="/teacher/dashboard">
-            <Button variant="outline" size="sm">
-              🏠 대시보드
+            <Button
+              variant="ghost"
+              className="flex items-center gap-2 px-4 py-2 bg-sky-100 hover:bg-sky-200 text-sky-700 font-medium rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
+            >
+              <span>←</span>
+              <span>대시보드</span>
             </Button>
           </Link>
           <Link href="/teacher/dashboard">
-            <Button variant="outline" size="sm" onClick={() => {
-              // 대시보드의 경기 관리 탭으로 이동하도록 상태 저장
-              sessionStorage.setItem('dashboardView', 'games');
-            }}>
-              ⚾ 경기 관리
+            <Button
+              variant="ghost"
+              onClick={() => {
+                // 대시보드의 경기 관리 탭으로 이동하도록 상태 저장
+                sessionStorage.setItem('dashboardView', 'games');
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-sky-100 hover:bg-sky-200 text-sky-700 font-medium rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
+            >
+              <span>⚾</span>
+              <span>경기 관리</span>
             </Button>
           </Link>
         </div>

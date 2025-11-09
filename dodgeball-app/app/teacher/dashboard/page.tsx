@@ -5,18 +5,26 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getClasses, deleteClass, getGamesByTeacherId, deleteGame, getStudents, updateClass } from '@/lib/dataService';
+import { getClasses, deleteClass, getGamesByTeacherId, deleteGame, getStudents, updateClass, getTeams } from '@/lib/dataService';
 import { STORAGE_KEYS } from '@/lib/mockData';
-import { Class, Game, Student } from '@/types';
+import { Class, Game, Student, Team } from '@/types';
 import { ClassCard } from '@/components/teacher/ClassCard';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { GameModeSelectModal } from '@/components/teacher/GameModeSelectModal';
+import { QuickGameModal } from '@/components/teacher/QuickGameModal';
 
 export default function TeacherDashboardPage() {
   const router = useRouter();
   const [classes, setClasses] = useState<Class[]>([]);
   const [games, setGames] = useState<Game[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [dashboardView, setDashboardView] = useState<'dashboard' | 'classes' | 'games'>('dashboard');
+  const [teacherId, setTeacherId] = useState<string>('');
+
+  // 모달 상태
+  const [showGameModeModal, setShowGameModeModal] = useState(false);
+  const [showQuickGameModal, setShowQuickGameModal] = useState(false);
 
   // 학급별 학생 데이터
   const [studentsByClass, setStudentsByClass] = useState<Record<string, Student[]>>({});
@@ -27,15 +35,18 @@ export default function TeacherDashboardPage() {
 
   useEffect(() => {
     // 로그인 체크
-    const teacherId = localStorage.getItem(STORAGE_KEYS.CURRENT_TEACHER);
-    if (!teacherId) {
+    const currentTeacherId = localStorage.getItem(STORAGE_KEYS.CURRENT_TEACHER);
+    if (!currentTeacherId) {
       router.push('/teacher/login');
       return;
     }
 
-    // 학급 및 경기 목록 불러오기
-    loadClasses(teacherId);
-    loadGames(teacherId);
+    setTeacherId(currentTeacherId);
+
+    // 학급, 경기, 팀 목록 불러오기
+    loadClasses(currentTeacherId);
+    loadGames(currentTeacherId);
+    loadTeams(currentTeacherId);
 
     // sessionStorage에서 대시보드 뷰 상태 확인
     const savedView = sessionStorage.getItem('dashboardView');
@@ -85,6 +96,15 @@ export default function TeacherDashboardPage() {
       setGames(gameList);
     } catch (error) {
       console.error('Failed to load games:', error);
+    }
+  };
+
+  const loadTeams = async (teacherId: string) => {
+    try {
+      const teamList = await getTeams(teacherId);
+      setTeams(teamList);
+    } catch (error) {
+      console.error('Failed to load teams:', error);
     }
   };
 
@@ -152,11 +172,6 @@ export default function TeacherDashboardPage() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem(STORAGE_KEYS.CURRENT_TEACHER);
-    router.push('/');
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -167,27 +182,6 @@ export default function TeacherDashboardPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* 상단 네비게이션 바 */}
-      <nav className="bg-card shadow-lg border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">🏐</span>
-              <h1 className="text-xl font-bold text-card-foreground">
-                DodgeballHub
-              </h1>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <p className="text-sm font-semibold text-card-foreground">김교사 선생님</p>
-              <Button onClick={handleLogout} variant="destructive" size="sm">
-                로그아웃
-              </Button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
       {/* 메인 콘텐츠 */}
       <main className={`w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow flex flex-col ${dashboardView === 'dashboard' ? 'justify-center' : ''}`}>
         {/* 대시보드 메인 뷰 */}
@@ -311,8 +305,13 @@ export default function TeacherDashboardPage() {
           <div>
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-4">
-                <Button onClick={() => setDashboardView('dashboard')} variant="ghost">
-                  ← 대시보드
+                <Button
+                  onClick={() => setDashboardView('dashboard')}
+                  variant="ghost"
+                  className="flex items-center gap-2 px-4 py-2 bg-sky-100 hover:bg-sky-200 text-sky-700 font-medium rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
+                >
+                  <span>←</span>
+                  <span>대시보드</span>
                 </Button>
                 <h2 className="text-2xl font-bold text-foreground">👥 학급 관리</h2>
               </div>
@@ -386,40 +385,24 @@ export default function TeacherDashboardPage() {
           <div>
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-4">
-                <Button onClick={() => setDashboardView('dashboard')} variant="ghost">
-                  ← 대시보드
+                <Button
+                  onClick={() => setDashboardView('dashboard')}
+                  variant="ghost"
+                  className="flex items-center gap-2 px-4 py-2 bg-sky-100 hover:bg-sky-200 text-sky-700 font-medium rounded-full transition-all duration-200 shadow-sm hover:shadow-md"
+                >
+                  <span>←</span>
+                  <span>대시보드</span>
                 </Button>
                 <h2 className="text-2xl font-bold text-foreground">⚾ 경기 관리</h2>
               </div>
-              <Link href="/teacher/game/new">
-                <Button
-                  size="lg"
-                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
-                >
-                  ⚾ 새 경기 시작
-                </Button>
-              </Link>
+              <Button
+                size="lg"
+                onClick={() => setShowGameModeModal(true)}
+                className="bg-green-100 hover:bg-green-200 text-green-700 border-green-200"
+              >
+                🎯 새 경기 시작
+              </Button>
             </div>
-
-            {/* 새 경기 추가 카드 */}
-            <Card className="mb-6 bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200">
-              <CardHeader>
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <span className="text-3xl">🏐</span>
-                  새 경기 추가
-                </CardTitle>
-                <CardDescription>
-                  모든 학급의 팀 중에서 선택하여 경기를 시작하세요
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link href="/teacher/game/new">
-                  <Button size="lg" className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600">
-                    경기 시작하기
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
 
             {/* 진행 중인 경기 섹션 */}
             <Card className="mb-6">
@@ -431,8 +414,22 @@ export default function TeacherDashboardPage() {
               </CardHeader>
               <CardContent>
                 {games.filter(g => !g.isCompleted).length === 0 ? (
-                  <div className="text-center py-8 text-gray-400">
-                    <p className="text-sm">진행 중인 경기가 없습니다</p>
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl shadow-md p-10 text-center border-2 border-dashed border-green-200">
+                    <div className="mb-4">
+                      <span className="text-7xl">🎯</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-700 mb-2">
+                      진행 중인 경기가 없습니다
+                    </h3>
+                    <p className="text-gray-500 mb-4">
+                      새로운 피구 경기를 시작해보세요!
+                    </p>
+                    <button
+                      onClick={() => setShowGameModeModal(true)}
+                      className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-full shadow-md hover:shadow-lg transition-all transform hover:scale-105"
+                    >
+                      🎯 경기 시작
+                    </button>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -561,6 +558,23 @@ export default function TeacherDashboardPage() {
           </div>
         )}
       </main>
+
+      {/* Modals */}
+      <GameModeSelectModal
+        isOpen={showGameModeModal}
+        onClose={() => setShowGameModeModal(false)}
+        onSelectQuick={() => {
+          setShowGameModeModal(false);
+          setShowQuickGameModal(true);
+        }}
+      />
+
+      <QuickGameModal
+        isOpen={showQuickGameModal}
+        onClose={() => setShowQuickGameModal(false)}
+        teams={teams}
+        teacherId={teacherId}
+      />
     </div>
   );
 }
