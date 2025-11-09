@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getClasses, deleteClass, getGamesByTeacherId, deleteGame } from '@/lib/dataService';
+import { getClasses, deleteClass, getGamesByTeacherId, deleteGame, getStudents, updateClass } from '@/lib/dataService';
 import { STORAGE_KEYS } from '@/lib/mockData';
-import { Class, Game } from '@/types';
+import { Class, Game, Student } from '@/types';
+import { ClassCard } from '@/components/teacher/ClassCard';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function TeacherDashboardPage() {
   const router = useRouter();
@@ -15,6 +17,13 @@ export default function TeacherDashboardPage() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [dashboardView, setDashboardView] = useState<'dashboard' | 'classes' | 'games'>('dashboard');
+
+  // 학급별 학생 데이터
+  const [studentsByClass, setStudentsByClass] = useState<Record<string, Student[]>>({});
+
+  // 페이지네이션 상태
+  const [classesPage, setClassesPage] = useState(0);
+  const classesPerPage = 4;
 
   useEffect(() => {
     // 로그인 체크
@@ -40,10 +49,31 @@ export default function TeacherDashboardPage() {
     try {
       const classList = await getClasses(teacherId);
       setClasses(classList);
+
+      // 각 학급의 학생 데이터 로드
+      await loadAllStudents(classList);
     } catch (error) {
       console.error('Failed to load classes:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAllStudents = async (classList: Class[]) => {
+    try {
+      const studentsData: Record<string, Student[]> = {};
+
+      // 모든 학급의 학생 데이터를 병렬로 로드
+      await Promise.all(
+        classList.map(async (classItem) => {
+          const students = await getStudents(classItem.id);
+          studentsData[classItem.id] = students;
+        })
+      );
+
+      setStudentsByClass(studentsData);
+    } catch (error) {
+      console.error('Failed to load students:', error);
     }
   };
 
@@ -76,6 +106,24 @@ export default function TeacherDashboardPage() {
     } catch (error) {
       console.error('Failed to delete class:', error);
       alert('학급 삭제에 실패했습니다.');
+    }
+  };
+
+  const handleRenameClass = async (classId: string, newName: string) => {
+    try {
+      const classToUpdate = classes.find(c => c.id === classId);
+      if (!classToUpdate) return;
+
+      await updateClass(classId, { ...classToUpdate, name: newName });
+
+      // 현재 teacherId 가져오기
+      const teacherId = localStorage.getItem(STORAGE_KEYS.CURRENT_TEACHER);
+      if (teacherId) {
+        await loadClasses(teacherId);
+      }
+    } catch (error) {
+      console.error('Failed to rename class:', error);
+      alert('학급 이름 변경에 실패했습니다.');
     }
   };
 
@@ -118,7 +166,7 @@ export default function TeacherDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* 상단 네비게이션 바 */}
       <nav className="bg-card shadow-lg border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -141,25 +189,36 @@ export default function TeacherDashboardPage() {
       </nav>
 
       {/* 메인 콘텐츠 */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className={`w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow flex flex-col ${dashboardView === 'dashboard' ? 'justify-center' : ''}`}>
         {/* 대시보드 메인 뷰 */}
         {dashboardView === 'dashboard' && (
           <div>
-            <h2 className="text-3xl font-bold text-foreground mb-8">대시보드</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 gap-4 md:gap-6">
               {/* 학급/팀 관리 카드 */}
               <Card
                 className="cursor-pointer hover:shadow-xl transition-all duration-200 hover:scale-105 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200"
-                onClick={() => setDashboardView('classes')}
+                onClick={() => router.push('/teacher/management')}
               >
-                <CardHeader>
-                  <div className="text-5xl mb-2">👥</div>
-                  <CardTitle className="text-xl">학급/팀 관리</CardTitle>
-                  <CardDescription>팀 생성 및 선수 관리</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold text-blue-600">{classes.length}</p>
-                  <p className="text-sm text-muted-foreground">개 팀</p>
+                <CardContent className="p-8 h-full min-h-[280px] flex flex-col justify-center items-center text-center gap-3 !pt-8">
+                  {/* 제목 영역 - 가로 배치 */}
+                  <div className="flex items-center justify-center gap-3 w-full">
+                    <div className="text-5xl sm:text-6xl lg:text-7xl flex-shrink-0">👥</div>
+                    <div className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-foreground whitespace-nowrap">
+                      학급/팀 관리
+                    </div>
+                  </div>
+
+                  {/* 설명 */}
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 whitespace-nowrap">
+                    학급 및 팀 설정, 학생 관리
+                  </p>
+
+                  {/* 통계 정보 - 배지 스타일 */}
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    <span className="px-4 py-2 bg-blue-100/80 rounded-lg font-semibold text-blue-800 text-base sm:text-lg whitespace-nowrap">
+                      {classes.length}개 학급
+                    </span>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -168,46 +227,79 @@ export default function TeacherDashboardPage() {
                 className="cursor-pointer hover:shadow-xl transition-all duration-200 hover:scale-105 bg-gradient-to-br from-green-50 to-green-100 border-green-200"
                 onClick={() => setDashboardView('games')}
               >
-                <CardHeader>
-                  <div className="text-5xl mb-2">⚾</div>
-                  <CardTitle className="text-xl">경기 관리</CardTitle>
-                  <CardDescription>진행 중 및 완료된 경기</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-4">
-                    <div>
-                      <p className="text-2xl font-bold text-green-600">{games.filter(g => !g.isCompleted).length}</p>
-                      <p className="text-xs text-muted-foreground">진행 중</p>
+                <CardContent className="p-8 h-full min-h-[280px] flex flex-col justify-center items-center text-center gap-3 !pt-8">
+                  {/* 제목 영역 */}
+                  <div className="flex items-center justify-center gap-3 w-full">
+                    <div className="text-5xl sm:text-6xl lg:text-7xl flex-shrink-0">🏐</div>
+                    <div className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-foreground whitespace-nowrap">
+                      경기 관리
                     </div>
-                    <div>
-                      <p className="text-2xl font-bold text-gray-600">{games.filter(g => g.isCompleted).length}</p>
-                      <p className="text-xs text-muted-foreground">완료</p>
-                    </div>
+                  </div>
+
+                  {/* 설명 */}
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 whitespace-nowrap">
+                    진행 중 및 완료된 경기
+                  </p>
+
+                  {/* 통계 정보 */}
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    <span className="px-4 py-2 bg-green-100/80 rounded-lg font-semibold text-green-800 text-base sm:text-lg whitespace-nowrap">
+                      {games.filter(g => !g.isCompleted).length}개 진행 중
+                    </span>
+                    <span className="px-4 py-2 bg-gray-100/80 rounded-lg font-semibold text-gray-800 text-base sm:text-lg whitespace-nowrap">
+                      {games.filter(g => g.isCompleted).length}개 완료
+                    </span>
                   </div>
                 </CardContent>
               </Card>
 
               {/* 통계 카드 */}
               <Card className="cursor-not-allowed opacity-50 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-                <CardHeader>
-                  <div className="text-5xl mb-2">📊</div>
-                  <CardTitle className="text-xl">통계</CardTitle>
-                  <CardDescription>선수 및 팀 통계</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">준비 중...</p>
+                <CardContent className="p-8 h-full min-h-[280px] flex flex-col justify-center items-center text-center gap-3 !pt-8">
+                  {/* 제목 영역 */}
+                  <div className="flex items-center justify-center gap-3 w-full">
+                    <div className="text-5xl sm:text-6xl lg:text-7xl flex-shrink-0">📊</div>
+                    <div className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-foreground whitespace-nowrap">
+                      통합 통계
+                    </div>
+                  </div>
+
+                  {/* 설명 */}
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 whitespace-nowrap">
+                    완료된 경기 통합 스탯
+                  </p>
+
+                  {/* 통계 정보 */}
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    <span className="px-4 py-2 bg-purple-100/80 rounded-lg font-semibold text-purple-800 text-base sm:text-lg whitespace-nowrap">
+                      준비 중...
+                    </span>
+                  </div>
                 </CardContent>
               </Card>
 
-              {/* 설정 카드 */}
-              <Card className="cursor-not-allowed opacity-50 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
-                <CardHeader>
-                  <div className="text-5xl mb-2">⚙️</div>
-                  <CardTitle className="text-xl">설정</CardTitle>
-                  <CardDescription>앱 설정 및 환경설정</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">준비 중...</p>
+              {/* 배지 도감 카드 */}
+              <Card className="cursor-not-allowed opacity-50 bg-gradient-to-br from-yellow-50 to-amber-100 border-yellow-200">
+                <CardContent className="p-8 h-full min-h-[280px] flex flex-col justify-center items-center text-center gap-3 !pt-8">
+                  {/* 제목 영역 */}
+                  <div className="flex items-center justify-center gap-3 w-full">
+                    <div className="text-5xl sm:text-6xl lg:text-7xl flex-shrink-0">🏆</div>
+                    <div className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-foreground whitespace-nowrap">
+                      배지 도감
+                    </div>
+                  </div>
+
+                  {/* 설명 */}
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 whitespace-nowrap">
+                    획득 가능한 모든 배지
+                  </p>
+
+                  {/* 통계 정보 */}
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    <span className="px-4 py-2 bg-amber-100/80 rounded-lg font-semibold text-amber-800 text-base sm:text-lg whitespace-nowrap">
+                      📖 배지 컬렉션
+                    </span>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -237,41 +329,54 @@ export default function TeacherDashboardPage() {
                 </Link>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {classes.map((classItem) => (
-                  <Card key={classItem.id} className="p-6 hover:shadow-lg transition-shadow">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-xl font-bold">{classItem.name}</h3>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteClass(classItem.id, classItem.name)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 -mt-2 -mr-2"
-                      >
-                        삭제
-                      </Button>
+              <>
+                {/* 학급 카드 그리드 - 4열 */}
+                <div className="grid grid-cols-2 tablet-lg:grid-cols-4 gap-3 tablet:gap-4 tablet-lg:gap-6">
+                  {classes
+                    .slice(classesPage * classesPerPage, (classesPage + 1) * classesPerPage)
+                    .map((classItem) => {
+                      const students = studentsByClass[classItem.id] || [];
+
+                      return (
+                        <ClassCard
+                          key={classItem.id}
+                          classData={classItem}
+                          students={students}
+                          onClick={() => router.push(`/teacher/class/${classItem.id}/students`)}
+                          onRename={(newName) => handleRenameClass(classItem.id, newName)}
+                          className="group"
+                        />
+                      );
+                    })}
+                </div>
+
+                {/* 페이지네이션 */}
+                {classes.length > classesPerPage && (
+                  <div className="flex justify-center items-center gap-4 mt-8">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setClassesPage(prev => Math.max(0, prev - 1))}
+                      disabled={classesPage === 0}
+                    >
+                      <ChevronLeft className="w-4 h-4 mr-1" />
+                      이전
+                    </Button>
+                    <div className="text-sm text-muted-foreground">
+                      {classesPage + 1} / {Math.ceil(classes.length / classesPerPage)}
                     </div>
-                    <p className="text-gray-600 mb-4">{classItem.year}학년도</p>
-                    <div className="space-y-3">
-                      <Link href={`/teacher/class/${classItem.id}/students`}>
-                        <Button variant="outline" className="w-full h-11">
-                          학생 관리
-                        </Button>
-                      </Link>
-                      <Link href={`/teacher/class/${classItem.id}/teams`}>
-                        <Button variant="outline" className="w-full h-11">
-                          팀 편성
-                        </Button>
-                      </Link>
-                      <Link href={`/teacher/class/${classItem.id}/game/setup`}>
-                        <Button className="w-full h-11">
-                          경기 시작
-                        </Button>
-                      </Link>
-                    </div>
-                  </Card>
-                ))}
-              </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setClassesPage(prev => Math.min(Math.ceil(classes.length / classesPerPage) - 1, prev + 1))}
+                      disabled={classesPage >= Math.ceil(classes.length / classesPerPage) - 1}
+                    >
+                      다음
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
