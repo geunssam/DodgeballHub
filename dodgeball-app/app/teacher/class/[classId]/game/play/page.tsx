@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Game, Student } from '@/types';
-import { getGameById, getStudents, updateGame, updateStudent, getStudentById } from '@/lib/dataService';
+import { Game, Student, FinishedGame, GameHistoryEntry } from '@/types';
+import { getGameById, getStudents, updateGame, updateStudent, getStudentById, updatePlayerHistory, saveFinishedGame, getCurrentTeacherId } from '@/lib/dataService';
 import { DodgeballCourt } from '@/components/teacher/DodgeballCourt';
 import { ScoreBoard } from '@/components/teacher/ScoreBoard';
 import { TeamLineupTable } from '@/components/teacher/TeamLineupTable';
+import { calculateMVPScore, findMVP } from '@/lib/mvpCalculator';
+import { checkAndAwardBadges } from '@/lib/badgeHelpers';
 
 export default function GamePlayPage() {
   const router = useRouter();
@@ -194,37 +196,143 @@ export default function GamePlayPage() {
     if (!confirm('경기를 종료하시겠습니까?')) return;
 
     try {
-      // 승리 팀 판정 (생존 인원수 많은 팀)
+      const teacherId = getCurrentTeacherId();
+      if (!teacherId) {
+        alert('로그인 정보를 찾을 수 없습니다.');
+        return;
+      }
+
+      console.log('🏁 경기 종료 시작...');
+
+      // ===== 1. 승리 팀 판정 (생존 인원수 많은 팀) =====
       const winner = gameData.teams.reduce((prev, current) => {
         const prevAlive = prev.members.filter(m => m.currentLives > 0).length;
         const currentAlive = current.members.filter(m => m.currentLives > 0).length;
         return currentAlive > prevAlive ? current : prev;
       });
 
-      // 각 학생 누적 스탯 업데이트
+      console.log(`🏆 승리 팀: ${winner.name}`);
+
+      // ===== 2. MVP 계산 =====
+      const playersWithStats = gameData.records.map(record => ({
+        playerId: record.studentId,
+        playerName: students.find(s => s.id === record.studentId)?.name || '알 수 없음',
+        stats: {
+          outs: record.outs,
+          passes: record.passes,
+          sacrifices: record.sacrifices,
+          cookies: record.cookies,
+          gamesPlayed: 1,
+          totalScore: record.outs + record.passes + record.sacrifices + record.cookies
+        }
+      }));
+
+      const mvpResult = findMVP(playersWithStats);
+      const mvpIds = mvpResult ? [mvpResult.playerId] : [];
+
+      if (mvpResult) {
+        console.log(`🌟 MVP: ${mvpResult.playerName} (${mvpResult.score}점)`);
+      }
+
+      // ===== 3. 배지 자동 수여 및 playerHistory 업데이트 =====
+      const currentDate = new Date().toISOString();
+      const allUpdatedRecords = [];
+
       for (const record of gameData.records) {
         const student = await getStudentById(record.studentId);
         if (!student) continue;
 
-        // 총점 계산: 모든 스탯 1점씩
-        const gameScore = record.outs + record.passes + record.sacrifices + record.cookies;
+        // 3-1. 배지 체크 및 자동 수여
+        const { awardedBadges, updatedStudent } = await checkAndAwardBadges(
+          student,
+          {
+            outs: record.outs,
+            passes: record.passes,
+            sacrifices: record.sacrifices,
+            cookies: record.cookies
+          },
+          gameData.id
+        );
+
+        // 3-2. 원 소속팀 찾기
+        const originalTeam = gameData.teams.find(team =>
+          team.members.some(m => m.studentId === record.studentId)
+        );
+
+        const isOriginalTeam = originalTeam ? originalTeam.teamId === winner.teamId : true;
+
+        // 3-3. GameHistoryEntry 생성
+        const gameHistoryEntry: GameHistoryEntry = {
+          gameId: gameData.id,
+          gameDate: currentDate,
+          teamId: originalTeam?.teamId || '',
+          teamName: originalTeam?.name || '알 수 없음',
+          isOriginalTeam,
+          stats: {
+            outs: record.outs,
+            passes: record.passes,
+            sacrifices: record.sacrifices,
+            cookies: record.cookies,
+            gamesPlayed: 1,
+            totalScore: record.outs + record.passes + record.sacrifices + record.cookies
+          },
+          newBadges: awardedBadges.map(b => b.id),
+          result: originalTeam?.teamId === winner.teamId ? 'win' : 'loss'
+        };
+
+        // 3-4. playerHistory 업데이트
+        await updatePlayerHistory(teacherId, record.studentId, gameHistoryEntry);
+
+        allUpdatedRecords.push({
+          studentId: record.studentId,
+          newBadges: awardedBadges.map(b => b.id),
+          updatedStudent
+        });
+
+        console.log(`✅ ${student.name} 기록 저장 완료 (배지 ${awardedBadges.length}개)`);
+      }
+
+      // ===== 4. 학생 누적 스탯 업데이트 =====
+      for (const { studentId, updatedStudent } of allUpdatedRecords) {
+        const record = gameData.records.find(r => r.studentId === studentId);
+        if (!record) continue;
 
         const newStats = {
-          outs: student.stats.outs + record.outs,
-          passes: student.stats.passes + record.passes,
-          sacrifices: student.stats.sacrifices + record.sacrifices,
-          cookies: student.stats.cookies + record.cookies,
-          gamesPlayed: student.stats.gamesPlayed + 1,
+          outs: updatedStudent.stats.outs + record.outs,
+          passes: updatedStudent.stats.passes + record.passes,
+          sacrifices: updatedStudent.stats.sacrifices + record.sacrifices,
+          cookies: updatedStudent.stats.cookies + record.cookies,
+          gamesPlayed: updatedStudent.stats.gamesPlayed + 1,
           totalScore: 0 // 아래에서 계산
         };
 
         // 누적 총점 계산
         newStats.totalScore = newStats.outs + newStats.passes + newStats.sacrifices + newStats.cookies;
 
-        await updateStudent(student.id, { stats: newStats });
+        await updateStudent(studentId, { stats: newStats });
       }
 
-      // 경기 데이터 저장
+      // ===== 5. finishedGames에 저장 =====
+      const finishedGame: FinishedGame = {
+        ...gameData,
+        status: 'finished',
+        finishedAt: currentDate,
+        finalScores: gameData.teams.reduce((acc, team) => {
+          const teamScore = gameData.records
+            .filter(r => team.members.some(m => m.studentId === r.studentId))
+            .reduce((sum, r) => sum + r.outs + r.passes + r.sacrifices + r.cookies, 0);
+          acc[team.teamId] = teamScore;
+          return acc;
+        }, {} as { [teamId: string]: number }),
+        winner: winner.teamId,
+        mvps: mvpIds,
+        isCompleted: true
+      };
+
+      await saveFinishedGame(teacherId, finishedGame);
+      console.log('💾 finishedGames 저장 완료');
+
+      // ===== 6. 현재 경기를 완료 상태로 업데이트 =====
       await updateGame(gameData.id, {
         ...gameData,
         winner: winner.teamId,
@@ -234,7 +342,11 @@ export default function GamePlayPage() {
       // FloatingControl에게 경기 종료 알림 (custom event)
       window.dispatchEvent(new CustomEvent('gameStateChanged'));
 
-      alert(`${winner.name} 승리!`);
+      console.log('✅ 경기 종료 완료!');
+
+      // MVP 정보 포함하여 알림
+      const mvpName = mvpResult?.playerName || '없음';
+      alert(`${winner.name} 승리!\n🌟 MVP: ${mvpName}`);
 
       // 대시보드로 이동하면서 경기 뷰 표시
       sessionStorage.setItem('dashboardView', 'games');
@@ -245,7 +357,7 @@ export default function GamePlayPage() {
         window.location.reload();
       }, 100);
     } catch (error) {
-      console.error('Failed to end game:', error);
+      console.error('❌ 경기 종료 실패:', error);
       alert('경기 종료에 실패했습니다.');
     }
   };

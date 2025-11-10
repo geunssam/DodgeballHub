@@ -340,8 +340,9 @@ export default function TeamsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <main className="flex-grow p-6">
+        <div className="max-w-7xl mx-auto">
         {/* 헤더 */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">
@@ -556,7 +557,8 @@ export default function TeamsPage() {
             onCancel={() => setShowAddClassStudentsModal(false)}
           />
         )}
-      </div>
-    </main>
+        </div>
+      </main>
+    </div>
   );
 }

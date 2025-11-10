@@ -433,7 +433,9 @@ export const STORAGE_KEYS = {
   TEAMS: 'dodgeball_teams',
   GAMES: 'dodgeball_games',
   CUSTOM_BADGES: 'dodgeball_custom_badges',
-  CURRENT_TEACHER: 'dodgeball_current_teacher'
+  CURRENT_TEACHER: 'dodgeball_current_teacher',
+  PLAYER_HISTORY: 'dodgeball_player_history',    // 선수별 경기 기록
+  FINISHED_GAMES: 'dodgeball_finished_games'     // 완료된 경기 목록
 };
 
 // ===== 초기화 함수 =====

@@ -187,8 +187,9 @@ export default function NewGamePage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <main className="flex-grow p-4">
+        <div className="max-w-6xl mx-auto">
         {/* 헤더 */}
         <div className="flex justify-between items-center mb-4">
           <div>
@@ -445,16 +446,17 @@ export default function NewGamePage() {
         >
           🏐 경기 시작
         </Button>
-      </div>
 
-      {/* 팀 상세 모달 */}
-      <TeamDetailModal
-        team={selectedTeamForDetail}
-        teamClass={selectedTeamForDetail?.sourceClassIds?.[0]
-          ? allClasses.find(c => c.id === selectedTeamForDetail.sourceClassIds![0])
-          : undefined}
-        onClose={() => setSelectedTeamForDetail(null)}
-      />
-    </main>
+        {/* 팀 상세 모달 */}
+        <TeamDetailModal
+          team={selectedTeamForDetail}
+          teamClass={selectedTeamForDetail?.sourceClassIds?.[0]
+            ? allClasses.find(c => c.id === selectedTeamForDetail.sourceClassIds![0])
+            : undefined}
+          onClose={() => setSelectedTeamForDetail(null)}
+        />
+      </div>
+      </main>
+    </div>
   );
 }

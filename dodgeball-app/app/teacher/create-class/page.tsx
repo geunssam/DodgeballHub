@@ -48,8 +48,9 @@ export default function CreateClassPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <main className="flex-grow p-6">
+        <div className="max-w-2xl mx-auto">
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">새 학급 만들기</h1>
           <p className="text-gray-600">학급 정보를 입력해주세요.</p>
@@ -101,7 +102,8 @@ export default function CreateClassPage() {
             </div>
           </form>
         </Card>
-      </div>
-    </main>
+        </div>
+      </main>
+    </div>
   );
 }

@@ -4,6 +4,11 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Custom Breakpoints */
+  --breakpoint-tablet: 768px;
+  --breakpoint-tablet-lg: 1024px;
+
+  /* Colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);

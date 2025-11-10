@@ -4,11 +4,14 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { getClassById, getStudents, createStudent, deleteStudent } from '@/lib/dataService';
+import { getClassById, getStudents, createStudent, deleteStudent, updateStudent } from '@/lib/dataService';
 import { Class, Student } from '@/types';
+import { StudentCard } from '@/components/teacher/StudentCard';
+import { loadCustomBadges } from '@/lib/badgeHelpers';
+import { calculateClassStats, formatStatsWithIcons } from '@/lib/statsHelpers';
 
 export default function StudentsPage() {
   const router = useRouter();
@@ -20,6 +23,9 @@ export default function StudentsPage() {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [inputMethod, setInputMethod] = useState<'manual' | 'text' | 'csv' | null>(null);
+
+  // 커스텀 배지
+  const [customBadges, setCustomBadges] = useState(loadCustomBadges());
 
   // 개별 추가 폼 상태
   const [newStudentName, setNewStudentName] = useState('');
@@ -341,6 +347,22 @@ ${gradePart},${classPart},10,오태양`;
     }
   };
 
+  const handleToggleGender = async (student: Student) => {
+    const currentGender = student.gender;
+    const newGender: 'male' | 'female' | undefined =
+      currentGender === 'male' ? 'female' :
+      currentGender === 'female' ? undefined :
+      'male';
+
+    try {
+      await updateStudent(student.id, { ...student, gender: newGender });
+      await loadData();
+    } catch (error) {
+      console.error('Failed to toggle gender:', error);
+      alert('성별 변경에 실패했습니다.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -350,8 +372,9 @@ ${gradePart},${classPart},10,오태양`;
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <main className="flex-grow p-6">
+        <div className="max-w-6xl mx-auto">
         {/* 헤더 */}
         <div className="flex justify-between items-center mb-8">
           <div>
@@ -614,65 +637,42 @@ ${gradePart},${classPart},10,오태양`;
             </Button>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {students.map((student) => (
-              <Card key={student.id} className="p-6">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h3 className="text-xl font-bold">{student.name}</h3>
-                    <p className="text-sm text-gray-600">출석번호: {student.number}</p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeleteStudent(student.id, student.name)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    삭제
-                  </Button>
+          <>
+            {/* 학생 카드 그리드 - 4열, 스크롤 */}
+            <div className="max-h-[600px] overflow-y-auto pr-2">
+              <div className="grid grid-cols-2 tablet-lg:grid-cols-4 gap-3 tablet:gap-4 tablet-lg:gap-6">
+                {students.map((student) => (
+                  <StudentCard
+                    key={student.id}
+                    student={student}
+                    customBadges={customBadges}
+                    onClick={() => router.push(`/teacher/class/${classId}/students/${student.id}`)}
+                    onGenderToggle={() => handleToggleGender(student)}
+                    onDelete={() => handleDeleteStudent(student.id, student.name)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* 학급 전체 통계 */}
+            <Card className="mt-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-bold mb-4 text-center">학급 전체 통계</h3>
+                <div className="flex items-center justify-around gap-4">
+                  {formatStatsWithIcons(calculateClassStats(students)).map((stat) => (
+                    <div key={stat.label} className="flex flex-col items-center gap-1">
+                      <div className="text-3xl">{stat.icon}</div>
+                      <div className="text-2xl font-bold text-foreground">{stat.value}</div>
+                      <div className="text-sm text-muted-foreground">{stat.label}</div>
+                    </div>
+                  ))}
                 </div>
-
-                <div className="space-y-2 text-sm">
-                  <div className="bg-gray-100 p-3 rounded">
-                    <p className="font-mono text-xs text-gray-600 mb-1">접속 코드</p>
-                    <p className="font-bold">{student.accessCode}</p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-blue-50 p-2 rounded text-center">
-                      <p className="text-xs text-gray-600">총점</p>
-                      <p className="font-bold text-blue-600">{student.stats.totalScore}</p>
-                    </div>
-                    <div className="bg-green-50 p-2 rounded text-center">
-                      <p className="text-xs text-gray-600">경기수</p>
-                      <p className="font-bold text-green-600">{student.stats.gamesPlayed}</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-4 gap-1 text-center text-xs">
-                    <div>
-                      <p className="text-gray-600">아웃</p>
-                      <p className="font-bold">{student.stats.outs}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-600">패스</p>
-                      <p className="font-bold">{student.stats.passes}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-600">양보</p>
-                      <p className="font-bold">{student.stats.sacrifices}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-600">쿠키</p>
-                      <p className="font-bold">{student.stats.cookies}</p>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
+              </CardContent>
+            </Card>
+          </>
         )}
-      </div>
-    </main>
+        </div>
+      </main>
+    </div>
   );
 }

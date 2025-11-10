@@ -1,5 +1,18 @@
-import { Teacher, Class, Student, Team, Game, CustomBadge } from '@/types';
+import {
+  Teacher, Class, Student, Team, Game, CustomBadge,
+  PlayerHistory, GameHistoryEntry, FinishedGame
+} from '@/types';
 import { STORAGE_KEYS } from './mockData';
+
+// ===== Authentication Helpers =====
+
+/**
+ * 현재 로그인한 교사 ID를 가져옵니다
+ */
+export function getCurrentTeacherId(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(STORAGE_KEYS.CURRENT_TEACHER);
+}
 
 // ===== Helper Functions =====
 function getFromStorage<T>(key: string): T[] {
@@ -311,4 +324,132 @@ export async function deleteCustomBadge(id: string): Promise<void> {
   const badges = getFromStorage<CustomBadge>(STORAGE_KEYS.CUSTOM_BADGES);
   const filtered = badges.filter(b => b.id !== id);
   saveToStorage(STORAGE_KEYS.CUSTOM_BADGES, filtered);
+}
+
+// ===== Player History (선수별 경기 기록) =====
+
+/**
+ * 특정 선수의 경기 기록을 조회합니다
+ */
+export async function getPlayerHistory(teacherId: string, playerId: string): Promise<PlayerHistory | null> {
+  const key = `${STORAGE_KEYS.PLAYER_HISTORY}_${teacherId}`;
+  const allHistories = getFromStorage<PlayerHistory>(key);
+  return allHistories.find(h => h.playerId === playerId) || null;
+}
+
+/**
+ * 선수의 경기 기록을 업데이트합니다
+ */
+export async function updatePlayerHistory(
+  teacherId: string,
+  playerId: string,
+  gameEntry: GameHistoryEntry
+): Promise<void> {
+  const key = `${STORAGE_KEYS.PLAYER_HISTORY}_${teacherId}`;
+  const allHistories = getFromStorage<PlayerHistory>(key);
+
+  const existingIndex = allHistories.findIndex(h => h.playerId === playerId);
+
+  if (existingIndex !== -1) {
+    // 기존 기록 업데이트
+    allHistories[existingIndex].games.push(gameEntry);
+    allHistories[existingIndex].updatedAt = new Date().toISOString();
+  } else {
+    // 새 기록 생성
+    allHistories.push({
+      playerId,
+      games: [gameEntry],
+      updatedAt: new Date().toISOString()
+    });
+  }
+
+  saveToStorage(key, allHistories);
+}
+
+/**
+ * 교사의 모든 선수 경기 기록을 조회합니다
+ */
+export async function getAllPlayerHistories(teacherId: string): Promise<PlayerHistory[]> {
+  const key = `${STORAGE_KEYS.PLAYER_HISTORY}_${teacherId}`;
+  return getFromStorage<PlayerHistory>(key);
+}
+
+/**
+ * 선수의 상세 경기 기록을 조회합니다 (FinishedGame과 조인)
+ */
+export async function getPlayerDetailedHistory(teacherId: string, playerId: string): Promise<FinishedGame[]> {
+  const history = await getPlayerHistory(teacherId, playerId);
+  if (!history) return [];
+
+  const finishedGames = await getFinishedGames(teacherId);
+  const gameMap = new Map(finishedGames.map(g => [g.id, g]));
+
+  return history.games
+    .map(entry => gameMap.get(entry.gameId))
+    .filter((game): game is FinishedGame => game !== undefined);
+}
+
+// ===== Finished Games (완료된 경기) =====
+
+/**
+ * 완료된 경기를 저장합니다
+ */
+export async function saveFinishedGame(teacherId: string, game: FinishedGame): Promise<void> {
+  const key = `${STORAGE_KEYS.FINISHED_GAMES}_${teacherId}`;
+  const finishedGames = getFromStorage<FinishedGame>(key);
+
+  // 중복 체크
+  const existingIndex = finishedGames.findIndex(g => g.id === game.id);
+  if (existingIndex !== -1) {
+    finishedGames[existingIndex] = game;
+  } else {
+    finishedGames.push(game);
+  }
+
+  saveToStorage(key, finishedGames);
+}
+
+/**
+ * 완료된 경기 목록을 조회합니다
+ */
+export async function getFinishedGames(teacherId: string, limit?: number): Promise<FinishedGame[]> {
+  const key = `${STORAGE_KEYS.FINISHED_GAMES}_${teacherId}`;
+  const finishedGames = getFromStorage<FinishedGame>(key);
+
+  // 날짜순 정렬 (최신순)
+  const sorted = finishedGames.sort((a, b) =>
+    new Date(b.finishedAt).getTime() - new Date(a.finishedAt).getTime()
+  );
+
+  return limit ? sorted.slice(0, limit) : sorted;
+}
+
+/**
+ * 완료된 경기 목록을 실시간으로 구독합니다
+ * (localStorage 기반이므로 storage 이벤트 사용)
+ *
+ * @returns unsubscribe 함수
+ */
+export function subscribeToFinishedGames(
+  teacherId: string,
+  callback: (games: FinishedGame[]) => void
+): () => void {
+  const key = `${STORAGE_KEYS.FINISHED_GAMES}_${teacherId}`;
+
+  // 초기 데이터 전달
+  getFinishedGames(teacherId).then(callback);
+
+  // storage 이벤트 리스너 (다른 탭에서 변경 시)
+  const handleStorageChange = (e: StorageEvent) => {
+    if (e.key === key) {
+      getFinishedGames(teacherId).then(callback);
+    }
+  };
+
+  window.addEventListener('storage', handleStorageChange);
+
+  // unsubscribe 함수
+  return () => {
+    window.removeEventListener('storage', handleStorageChange);
+  };
 }
