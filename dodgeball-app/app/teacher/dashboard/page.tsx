@@ -7,27 +7,35 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getClasses, deleteClass, getGamesByTeacherId, deleteGame, getStudents, updateClass, getTeams } from '@/lib/dataService';
 import { STORAGE_KEYS } from '@/lib/mockData';
-import { Class, Game, Student, Team } from '@/types';
+import { Class, Game, Student, Team, FinishedGame } from '@/types';
 import { ClassCard } from '@/components/teacher/ClassCard';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { GameModeSelectModal } from '@/components/teacher/GameModeSelectModal';
 import { QuickGameModal } from '@/components/teacher/QuickGameModal';
+import { SelectedGamesModal } from '@/components/teacher/SelectedGamesModal';
+import StatsView from '@/components/teacher/StatsView';
+import BadgeCollection from '@/components/badge/BadgeCollection';
 
 export default function TeacherDashboardPage() {
   const router = useRouter();
   const [classes, setClasses] = useState<Class[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dashboardView, setDashboardView] = useState<'dashboard' | 'classes' | 'games'>('dashboard');
+  const [dashboardView, setDashboardView] = useState<'dashboard' | 'classes' | 'games' | 'stats' | 'badges'>('dashboard');
   const [teacherId, setTeacherId] = useState<string>('');
 
   // 모달 상태
   const [showGameModeModal, setShowGameModeModal] = useState(false);
   const [showQuickGameModal, setShowQuickGameModal] = useState(false);
+  const [showSelectedGamesModal, setShowSelectedGamesModal] = useState(false);
 
   // 학급별 학생 데이터
   const [studentsByClass, setStudentsByClass] = useState<Record<string, Student[]>>({});
+
+  // 통계 뷰 상태
+  const [selectedGameIds, setSelectedGameIds] = useState<string[]>([]);
 
   // 페이지네이션 상태
   const [classesPage, setClassesPage] = useState(0);
@@ -73,16 +81,19 @@ export default function TeacherDashboardPage() {
   const loadAllStudents = async (classList: Class[]) => {
     try {
       const studentsData: Record<string, Student[]> = {};
+      const allStudentsArray: Student[] = [];
 
       // 모든 학급의 학생 데이터를 병렬로 로드
       await Promise.all(
         classList.map(async (classItem) => {
           const students = await getStudents(classItem.id);
           studentsData[classItem.id] = students;
+          allStudentsArray.push(...students);
         })
       );
 
       setStudentsByClass(studentsData);
+      setAllStudents(allStudentsArray);
     } catch (error) {
       console.error('Failed to load students:', error);
     }
@@ -248,7 +259,10 @@ export default function TeacherDashboardPage() {
               </Card>
 
               {/* 통계 카드 */}
-              <Card className="cursor-not-allowed opacity-50 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+              <Card
+                className="cursor-pointer hover:shadow-xl transition-all duration-200 hover:scale-105 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200"
+                onClick={() => setDashboardView('stats')}
+              >
                 <CardContent className="p-8 h-full min-h-[280px] flex flex-col justify-center items-center text-center gap-3 !pt-8">
                   {/* 제목 영역 */}
                   <div className="flex items-center justify-center gap-3 w-full">
@@ -266,14 +280,17 @@ export default function TeacherDashboardPage() {
                   {/* 통계 정보 */}
                   <div className="flex flex-wrap gap-2 justify-center">
                     <span className="px-4 py-2 bg-purple-100/80 rounded-lg font-semibold text-purple-800 text-base sm:text-lg whitespace-nowrap">
-                      준비 중...
+                      {games.filter(g => g.isCompleted).length}개 완료 경기
                     </span>
                   </div>
                 </CardContent>
               </Card>
 
               {/* 배지 도감 카드 */}
-              <Card className="cursor-not-allowed opacity-50 bg-gradient-to-br from-yellow-50 to-amber-100 border-yellow-200">
+              <Card
+                className="cursor-pointer hover:shadow-xl transition-all duration-200 hover:scale-105 bg-gradient-to-br from-yellow-50 to-amber-100 border-yellow-200"
+                onClick={() => setDashboardView('badges')}
+              >
                 <CardContent className="p-8 h-full min-h-[280px] flex flex-col justify-center items-center text-center gap-3 !pt-8">
                   {/* 제목 영역 */}
                   <div className="flex items-center justify-center gap-3 w-full">
@@ -557,6 +574,25 @@ export default function TeacherDashboardPage() {
             </Card>
           </div>
         )}
+
+        {/* 통계 뷰 - StatsView 컴포넌트 사용 */}
+        {dashboardView === 'stats' && (
+          <StatsView
+            finishedGames={games.filter(g => g.isCompleted) as FinishedGame[]}
+            teams={teams}
+            students={allStudents}
+            onBack={() => setDashboardView('dashboard')}
+          />
+        )}
+
+        {/* 배지 도감 뷰 */}
+        {dashboardView === 'badges' && (
+          <BadgeCollection
+            classId={classes[0]?.id || 'all'}
+            students={allStudents}
+            onBack={() => setDashboardView('dashboard')}
+          />
+        )}
       </main>
 
       {/* Modals */}
@@ -574,6 +610,14 @@ export default function TeacherDashboardPage() {
         onClose={() => setShowQuickGameModal(false)}
         teams={teams}
         teacherId={teacherId}
+      />
+
+      <SelectedGamesModal
+        isOpen={showSelectedGamesModal}
+        onClose={() => setShowSelectedGamesModal(false)}
+        selectedGames={games.filter(g => g.isCompleted && selectedGameIds.includes(g.id)) as FinishedGame[]}
+        teams={teams}
+        students={allStudents}
       />
     </div>
   );
