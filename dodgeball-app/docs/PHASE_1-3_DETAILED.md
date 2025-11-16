@@ -359,6 +359,203 @@ const handleSave = async () => {
 
 ---
 
+#### 1.6 배지 도감 (`BadgeCollection.tsx`)
+
+**위치**: `components/badge/BadgeCollection.tsx`
+
+**기능**:
+- 전체 배지 목록 표시
+- 티어별 필터링 (탭)
+- 영역별 그룹화 표시 ⭐ **dodgeball-app 핵심 차별점**
+- 배지 획득 현황 및 진행률
+- 학생별 배지 획득자 목록 모달
+
+**Props 인터페이스**:
+```typescript
+interface BadgeCollectionProps {
+  classId: string;      // 학급 ID
+  students: Student[];  // 학생 목록
+}
+```
+
+**탭 구조**:
+```
+전체 | 입문 | 숙련 | 마스터 | 레전드 | 커스텀
+```
+
+**⭐ 영역별 그룹화 시스템 (badgeCategories.ts 활용)**
+
+dodgeball-app의 배지 도감은 **티어별 탭 + 영역별 섹션**으로 이중 구조를 가집니다:
+
+1. **1단계**: 사용자가 티어(난이도) 선택
+2. **2단계**: 선택한 티어 내에서 6개 영역별로 배지를 그룹화하여 표시
+
+**6개 배지 영역**:
+```typescript
+BADGE_CATEGORIES = {
+  GAMES:      { name: '경기 참여', icon: '📊', color: 'blue' },
+  OUTS:       { name: '아웃',      icon: '🎯', color: 'red' },
+  PASSES:     { name: '패스',      icon: '🤝', color: 'green' },
+  SACRIFICES: { name: '양보',      icon: '💚', color: 'purple' },
+  COOKIES:    { name: '쿠키',      icon: '🍪', color: 'yellow' },
+  SPECIAL:    { name: '특별',      icon: '⭐', color: 'orange' }
+}
+```
+
+**UI 구성**:
+```
+┌──────────────────────────────────────────────────────────┐
+│  🏆 배지 도감                                     [X]    │
+├──────────────────────────────────────────────────────────┤
+│  ┌──────────┬──────────┬──────────┬──────────┐           │
+│  │ 전체 22개 │ 획득 8개 │ 학생 24명│ 달성률   │           │
+│  │          │          │          │ 36.4%   │           │
+│  └──────────┴──────────┴──────────┴──────────┘           │
+│                                                           │
+│  [전체][입문][숙련][마스터][레전드][커스텀]  ← 티어 탭   │
+│                                                           │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━          │
+│  📊 경기 참여 (5개)                    ← 영역별 헤더     │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━          │
+│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐            │
+│  │ 🎽     │ │ 💪     │ │ 🦾     │ │ 💎     │            │
+│  │ 첫출전 │ │ 꾸준함 │ │ 철인   │ │불멸의  │            │
+│  │ 입문   │ │ 숙련   │ │ 마스터 │ │레전드  │            │
+│  │━━━━━━━│ │━━━━━━━│ │━━━━━━━│ │━━━━━━━│            │
+│  │ 8/24   │ │ 3/24   │ │ 0/24   │ │ 0/24   │            │
+│  │ 33%    │ │ 12%    │ │ 0%     │ │ 0%     │            │
+│  └────────┘ └────────┘ └────────┘ └────────┘            │
+│  ┌────────┐                                              │
+│  │ 🏃     │                                              │
+│  │ 경기광 │                                              │
+│  │ 레전드 │                                              │
+│  │━━━━━━━│                                              │
+│  │ 0/24   │                                              │
+│  │ 0%     │                                              │
+│  └────────┘                                              │
+│                                                           │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━          │
+│  🎯 아웃 (4개)                         ← 다음 영역      │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━          │
+│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐            │
+│  │ 🎯     │ │ 🔥     │ │ 🎯🔥   │ │ 👑🔥   │            │
+│  │ 첫아웃 │ │불꽃슈터│ │화염저격│ │전설포수│            │
+│  │ ...    │ │ ...    │ │ ...    │ │ ...    │            │
+│  └────────┘ └────────┘ └────────┘ └────────┘            │
+│                                                           │
+│  (패스, 양보, 쿠키, 특별 영역 계속...)                   │
+└──────────────────────────────────────────────────────────┘
+```
+
+**반응형 그리드**:
+```typescript
+// 화면 크기에 따라 열 수 자동 조정
+className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3"
+```
+
+**주요 함수**:
+```typescript
+// 1. 영역별 배지 그룹화
+const groupedBadges = useMemo(() => {
+  const allBadges = Object.values(BADGES).filter(badge =>
+    selectedTier === 'all' || badge.tier === selectedTier
+  );
+  return groupBadgesByCategory(allBadges);
+}, [selectedTier]);
+
+// 2. 배지별 획득자 수 계산
+const badgeAcquisitionCounts = useMemo(() => {
+  const counts: Record<string, number> = {};
+  students.forEach(student => {
+    student.badges.forEach(badge => {
+      counts[badge.id] = (counts[badge.id] || 0) + 1;
+    });
+  });
+  return counts;
+}, [students]);
+
+// 3. 전체 달성률 계산
+const overallCompletionRate = useMemo(() => {
+  if (students.length === 0) return 0;
+  const totalBadges = Object.keys(BADGES).length;
+  const totalAcquired = totalAcquiredBadges;
+  const maxPossible = totalBadges * students.length;
+  return (totalAcquired / maxPossible) * 100;
+}, [students, totalAcquiredBadges]);
+
+// 4. 배지 클릭 → 획득 학생 목록 모달
+const handleBadgeClick = (badge: BadgeDefinition) => {
+  setSelectedBadge(badge);
+  setIsModalOpen(true);
+};
+```
+
+**📊 baseball-firebase vs dodgeball-app 비교**:
+
+| 항목 | baseball-firebase | dodgeball-app |
+|------|-------------------|---------------|
+| **탭 구조** | 티어별 탭 | 티어별 탭 |
+| **탭 내부** | 단순 5열 그리드 나열 | **영역별 섹션으로 체계적 분류** ⭐ |
+| **영역 표시** | ❌ 없음 | ✅ 6개 영역별 헤더 + 색상 구분 |
+| **그리드** | 고정 `grid-cols-5` | 반응형 `grid-cols-2~5` |
+| **정보 구조** | 평면적 (1단계) | 계층적 (티어 → 영역) |
+| **사용자 경험** | 배지를 순서대로 탐색 | 논리적 그룹으로 체계적 탐색 |
+
+**왜 영역별 그룹화가 우수한가?**:
+
+1. **논리적 분류**: 비슷한 성격의 배지를 묶어서 표시
+2. **빠른 탐색**: "아웃 관련 배지만 보고 싶다" → 아웃 섹션으로 바로 이동
+3. **진행도 파악**: 각 영역별로 얼마나 달성했는지 직관적으로 확인
+4. **확장성**: 새로운 배지를 추가할 때 해당 영역에만 추가하면 됨
+5. **교육적 가치**: 학생들이 "어떤 활동에서 배지를 얻을 수 있는지" 명확히 이해
+
+**badgeCategories.ts 주요 헬퍼 함수**:
+```typescript
+// 배지를 영역별로 그룹화
+groupBadgesByCategory(badges: BadgeDefinition[]): Map<string, BadgeDefinition[]>
+
+// 배지 ID로 카테고리 찾기
+getBadgeCategory(badgeId: string): BadgeCategory | null
+
+// 카테고리별 획득률 계산
+getCategoryCompletionRate(categoryId: string, currentBadgeIds: string[]): number
+
+// 카테고리 색상 클래스 가져오기
+getCategoryColorClass(categoryId: string, type: 'bg' | 'text' | 'border'): string
+```
+
+**StudentListModal (배지 획득자 목록)**:
+```typescript
+// 특정 배지를 획득한 학생들을 모달로 표시
+interface StudentListModalProps {
+  badge: BadgeDefinition | null;
+  isOpen: boolean;
+  onClose: () => void;
+  students: Student[];
+  classId: string;
+}
+
+// 학생들을 반별로 그룹화하여 표시
+const studentsByClass = studentsWithBadge.reduce((acc, student) => {
+  const className = `${student.classNumber}반` || '미지정';
+  if (!acc[className]) acc[className] = [];
+  acc[className].push(student);
+  return acc;
+}, {});
+```
+
+**구현 체크포인트**:
+- ✅ 티어별 탭 네비게이션
+- ✅ 영역별 섹션 헤더 (아이콘 + 이름 + 개수)
+- ✅ 영역별 색상 구분
+- ✅ 반응형 그리드 레이아웃
+- ✅ BadgeCard 컴포넌트 (진행률 포함)
+- ✅ 배지 클릭 시 획득 학생 목록 모달
+- ✅ 통계 대시보드 (전체 배지 수, 획득률)
+- ✅ 모바일/태블릿 최적화
+
+---
+
 ### ✅ Phase 1 체크리스트
 
 - [ ] `BadgeCreator.tsx` 작성 (커스텀 배지 생성)
@@ -366,10 +563,14 @@ const handleSave = async () => {
 - [ ] `ManualBadgeModal.tsx` 작성 (수동 부여)
 - [ ] `PlayerBadgeDisplay.tsx` 작성 (카드 배지 표시)
 - [ ] `PlayerBadgeOrderModal.tsx` 작성 (순서 관리)
+- [x] `BadgeCollection.tsx` 구현 (배지 도감) ⭐ **영역별 그룹화 완료**
+- [x] `lib/badgeCategories.ts` 영역별 그룹화 시스템 구현
+- [x] `groupBadgesByCategory()` 헬퍼 함수 구현
 - [ ] `lib/badgeHelpers.ts`에 커스텀 배지 함수 추가
 - [ ] 학생 카드에 `PlayerBadgeDisplay` 통합
 - [ ] 학생 뷰에 배지 순서 관리 추가
 - [ ] localStorage 저장 로직 구현
+- [x] 대시보드에 배지 도감 모달 통합
 - [ ] 테스트 및 버그 수정
 
 ---

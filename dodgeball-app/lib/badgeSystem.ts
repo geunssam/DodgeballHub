@@ -11,6 +11,7 @@ export const BADGE_TIERS = {
   SKILLED: 2,     // 숙련
   MASTER: 3,      // 마스터
   LEGEND: 4,      // 레전드
+  SPECIAL: 5,     // 특별
 } as const;
 
 export type BadgeTier = typeof BADGE_TIERS[keyof typeof BADGE_TIERS];
@@ -73,7 +74,7 @@ export const BADGES: Record<string, BadgeDefinition> = {
     id: 'first_point',
     name: '첫 득점',
     icon: '⭐',
-    tier: BADGE_TIERS.BEGINNER,
+    tier: BADGE_TIERS.SPECIAL,
     description: '첫 종합 점수를 획득했습니다!',
     condition: (stats) => stats.totalScore >= 1
   },
@@ -197,7 +198,7 @@ export const BADGES: Record<string, BadgeDefinition> = {
     id: 'perfect_teamplayer',
     name: '완벽한 팀원',
     icon: '⭐',
-    tier: BADGE_TIERS.MASTER,
+    tier: BADGE_TIERS.SPECIAL,
     description: '아웃 20 + 패스 20 + 양보 10 달성!',
     condition: (stats) =>
       stats.outs >= 20 &&

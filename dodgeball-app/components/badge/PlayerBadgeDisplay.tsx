@@ -1,13 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Badge as BadgeUI } from '@/components/ui/badge';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { getBadgeById, BADGE_TIERS } from '@/lib/badgeSystem';
 import type { Badge, CustomBadge } from '@/types';
@@ -23,22 +18,37 @@ interface PlayerBadgeDisplayProps {
   onClick?: () => void;
   className?: string;
   direction?: DisplayDirection;
+  showEmpty?: boolean;
+  showOverflow?: boolean;
+}
+
+interface HoveredBadge {
+  badgeId: string;
+  type: 'badge' | 'overflow';
+  rect: DOMRect;
 }
 
 export function PlayerBadgeDisplay({
-  badges,
+  badges = [],  // 기본값 추가
   customBadges = [],
   size = 'md',
   maxDisplay = 3,
   onClick,
   className,
   direction = 'horizontal',
+  showEmpty = true,
+  showOverflow = true,
 }: PlayerBadgeDisplayProps) {
+  const [hoveredBadge, setHoveredBadge] = useState<HoveredBadge | null>(null);
+  const badgeRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const displayBadges = useMemo(() => {
-    return badges.slice(0, maxDisplay);
+    return (badges || []).slice(0, maxDisplay);  // null/undefined 체크 추가
   }, [badges, maxDisplay]);
 
-  const remainingCount = badges.length - maxDisplay;
+  const remainingCount = (badges?.length || 0) - maxDisplay;
+  const overflowBadges = useMemo(() => {
+    return badges.slice(maxDisplay);
+  }, [badges, maxDisplay]);
 
   const getBadgeInfo = (badge: Badge) => {
     // 먼저 시스템 배지에서 찾기
@@ -47,6 +57,7 @@ export function PlayerBadgeDisplay({
       return {
         icon: systemBadge.icon,
         name: systemBadge.name,
+        description: systemBadge.description,
         tier: systemBadge.tier,
       };
     }
@@ -57,6 +68,7 @@ export function PlayerBadgeDisplay({
       return {
         icon: customBadge.emoji,
         name: customBadge.name,
+        description: customBadge.description,
         tier: null,
       };
     }
@@ -65,8 +77,18 @@ export function PlayerBadgeDisplay({
     return {
       icon: '🏆',
       name: badge.name || '알 수 없는 배지',
+      description: '',
       tier: null,
     };
+  };
+
+  const handleMouseEnter = (badgeId: string, type: 'badge' | 'overflow', event: React.MouseEvent) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setHoveredBadge({ badgeId, type, rect });
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredBadge(null);
   };
 
   const getTierColor = (tier: number | null): string => {
@@ -112,73 +134,221 @@ export function PlayerBadgeDisplay({
   const sizeClasses = getSizeClasses(size);
 
   if (badges.length === 0) {
-    return null;
+    return showEmpty ? (
+      <span className="text-xs text-gray-400 italic">배지 없음</span>
+    ) : null;
   }
 
   return (
-    <div className={cn(
-      'flex flex-wrap',
-      direction === 'vertical' ? 'flex-col items-center' : 'items-center',
-      sizeClasses.container,
-      className
-    )}>
-      <TooltipProvider>
+    <>
+      <div className={cn(
+        'flex flex-wrap',
+        direction === 'vertical' ? 'flex-col items-center' : 'items-center',
+        sizeClasses.container,
+        className
+      )}>
         {displayBadges.map((badge, index) => {
           const badgeInfo = getBadgeInfo(badge);
 
           return (
-            <Tooltip key={`${badge.id}-${index}`}>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={onClick}
-                  className={cn(
-                    'rounded-full border flex items-center justify-center transition-all',
-                    'hover:scale-110 hover:shadow-sm',
-                    sizeClasses.badge,
-                    getTierColor(badgeInfo.tier),
-                    onClick && 'cursor-pointer'
-                  )}
-                  type="button"
-                >
-                  {badgeInfo.icon}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <div className="text-sm">
-                  <div className="font-medium">{badgeInfo.name}</div>
-                  {badge.reason && (
-                    <div className="text-xs text-muted-foreground mt-1 max-w-xs">
-                      {badge.reason}
-                    </div>
-                  )}
-                  {badge.awardedAt && (
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {new Date(badge.awardedAt).toLocaleDateString('ko-KR')}
-                    </div>
-                  )}
-                </div>
-              </TooltipContent>
-            </Tooltip>
+            <span
+              key={`${badge.id}-${index}`}
+              ref={el => badgeRefs.current[badge.id] = el}
+              className={cn(
+                'rounded-full border flex items-center justify-center transition-all',
+                'hover:scale-110 hover:shadow-sm cursor-pointer',
+                sizeClasses.badge,
+                getTierColor(badgeInfo.tier)
+              )}
+              role="img"
+              aria-label={badgeInfo.name}
+              onMouseEnter={(e) => handleMouseEnter(badge.id, 'badge', e)}
+              onMouseLeave={handleMouseLeave}
+              onClick={onClick}
+            >
+              {badgeInfo.icon}
+            </span>
           );
         })}
-      </TooltipProvider>
 
-      {remainingCount > 0 && (
-        <BadgeUI
-          variant="outline"
-          className={cn(
-            'bg-muted/50 border-muted-foreground/20',
-            sizeClasses.more,
-            onClick && 'cursor-pointer hover:bg-muted'
-          )}
-          onClick={onClick}
-        >
-          +{remainingCount}
-        </BadgeUI>
+        {showOverflow && remainingCount > 0 && (
+          <span
+            className={cn(
+              'bg-muted/50 border border-muted-foreground/20 rounded-full flex items-center justify-center',
+              sizeClasses.more,
+              'cursor-pointer hover:bg-muted'
+            )}
+            onMouseEnter={(e) => handleMouseEnter('overflow', 'overflow', e)}
+            onMouseLeave={handleMouseLeave}
+            onClick={onClick}
+          >
+            +{remainingCount}
+          </span>
+        )}
+      </div>
+
+      {/* Portal로 툴팁 렌더링 */}
+      {hoveredBadge && typeof window !== 'undefined' && createPortal(
+        <BadgeTooltip
+          hoveredBadge={hoveredBadge}
+          badges={badges}
+          customBadges={customBadges}
+          overflowBadges={overflowBadges}
+          maxDisplay={maxDisplay}
+        />,
+        document.body
       )}
-    </div>
+    </>
   );
 }
+
+// 배지 툴팁 컴포넌트 (Portal로 렌더링)
+interface BadgeTooltipProps {
+  hoveredBadge: HoveredBadge;
+  badges: Badge[];
+  customBadges: CustomBadge[];
+  overflowBadges: Badge[];
+  maxDisplay: number;
+}
+
+const BadgeTooltip: React.FC<BadgeTooltipProps> = ({
+  hoveredBadge,
+  badges,
+  customBadges,
+  overflowBadges,
+  maxDisplay
+}) => {
+  const { badgeId, type, rect } = hoveredBadge;
+
+  const getBadgeInfo = (badge: Badge) => {
+    const systemBadge = getBadgeById(badge.id);
+    if (systemBadge) {
+      return {
+        icon: systemBadge.icon,
+        name: systemBadge.name,
+        description: systemBadge.description,
+        tier: systemBadge.tier,
+      };
+    }
+
+    const customBadge = customBadges.find(cb => cb.id === badge.id);
+    if (customBadge) {
+      return {
+        icon: customBadge.emoji,
+        name: customBadge.name,
+        description: customBadge.description,
+        tier: null,
+      };
+    }
+
+    return {
+      icon: '🏆',
+      name: badge.name || '알 수 없는 배지',
+      description: '',
+      tier: null,
+    };
+  };
+
+  const getTierName = (tier: number | null): string => {
+    if (!tier) return '커스텀';
+    const tierNames = {
+      1: '🥉 입문',
+      2: '🥈 숙련',
+      3: '🥇 마스터',
+      4: '👑 레전드',
+      5: '⭐ 특별'
+    };
+    return tierNames[tier] || '배지';
+  };
+
+  // 개별 배지 툴팁
+  if (type === 'badge') {
+    const badge = badges.find(b => b.id === badgeId);
+    if (!badge) return null;
+
+    const badgeInfo = getBadgeInfo(badge);
+
+    return (
+      <div
+        className="fixed px-3 py-2 bg-gray-900 text-white rounded-lg shadow-lg min-w-[200px] pointer-events-none z-[9999]"
+        style={{
+          left: `${rect.left + rect.width / 2}px`,
+          top: `${rect.top - 10}px`,
+          transform: 'translate(-50%, -100%)',
+        }}
+      >
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">{badgeInfo.icon}</span>
+            <div className="flex-1">
+              <p className="font-bold text-sm">{badgeInfo.name}</p>
+              <p className="text-xs text-gray-300">{getTierName(badgeInfo.tier)}</p>
+            </div>
+          </div>
+          <p className="text-xs text-gray-300 mt-1">{badgeInfo.description}</p>
+          {badge.reason && (
+            <p className="text-xs text-gray-400 italic mt-1">"{badge.reason}"</p>
+          )}
+          {badge.awardedAt && (
+            <p className="text-xs text-gray-400 mt-1">
+              {new Date(badge.awardedAt).toLocaleDateString('ko-KR')}
+            </p>
+          )}
+        </div>
+        {/* 화살표 */}
+        <div
+          className="absolute w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"
+          style={{
+            left: '50%',
+            bottom: '-4px',
+            transform: 'translateX(-50%) rotate(180deg)',
+          }}
+        />
+      </div>
+    );
+  }
+
+  // 오버플로우 배지 툴팁
+  if (type === 'overflow') {
+    return (
+      <div
+        className="fixed px-3 py-2 bg-gray-900 text-white rounded-lg shadow-lg min-w-[240px] pointer-events-none z-[9999]"
+        style={{
+          left: `${rect.left + rect.width / 2}px`,
+          top: `${rect.top - 10}px`,
+          transform: 'translate(-50%, -100%)',
+        }}
+      >
+        <p className="font-bold text-sm mb-2">추가 배지 ({badges.length - maxDisplay}개)</p>
+        <div className="space-y-2 max-h-[200px] overflow-y-auto">
+          {overflowBadges.map((badge, idx) => {
+            const badgeInfo = getBadgeInfo(badge);
+            return (
+              <div key={idx} className="flex items-center gap-2">
+                <span className="text-lg">{badgeInfo.icon}</span>
+                <div className="flex-1">
+                  <p className="text-xs font-medium">{badgeInfo.name}</p>
+                  <p className="text-[10px] text-gray-400">{getTierName(badgeInfo.tier)}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {/* 화살표 */}
+        <div
+          className="absolute w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"
+          style={{
+            left: '50%',
+            bottom: '-4px',
+            transform: 'translateX(-50%) rotate(180deg)',
+          }}
+        />
+      </div>
+    );
+  }
+
+  return null;
+};
 
 // 배지 컬렉션 전체를 표시하는 확장 버전
 interface PlayerBadgeCollectionProps {

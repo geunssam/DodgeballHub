@@ -10,9 +10,13 @@ import { GameSettingsModal } from '@/components/teacher/GameSettingsModal';
 export function NavBar() {
   const router = useRouter();
   const [showSettings, setShowSettings] = useState(false);
-  const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [currentDateTime, setCurrentDateTime] = useState<Date | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+    setCurrentDateTime(new Date());
+
     const timer = setInterval(() => {
       setCurrentDateTime(new Date());
     }, 1000);
@@ -40,27 +44,35 @@ export function NavBar() {
             {/* 중앙: 날짜/시간 - baseball 스타일 */}
             <div className="flex flex-1 justify-center">
               <div className="flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-1.5 lg:py-2 bg-lime-50 text-gray-800 font-semibold rounded-full shadow-sm border border-lime-200">
-                <div className="flex items-center gap-1">
-                  <span className="text-base lg:text-lg">📆</span>
-                  <span className="text-sm lg:text-base">
-                    {currentDateTime.toLocaleDateString('ko-KR', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      weekday: 'short'
-                    })}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-base lg:text-lg">⏱️</span>
-                  <span className="text-sm lg:text-base font-mono">
-                    {currentDateTime.toLocaleTimeString('ko-KR', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      second: '2-digit'
-                    })}
-                  </span>
-                </div>
+                {isMounted && currentDateTime ? (
+                  <>
+                    <div className="flex items-center gap-1">
+                      <span className="text-base lg:text-lg">📆</span>
+                      <span className="text-sm lg:text-base">
+                        {currentDateTime.toLocaleDateString('ko-KR', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          weekday: 'short'
+                        })}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-base lg:text-lg">⏱️</span>
+                      <span className="text-sm lg:text-base font-mono">
+                        {currentDateTime.toLocaleTimeString('ko-KR', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit'
+                        })}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm lg:text-base text-gray-400">로딩 중...</span>
+                  </div>
+                )}
               </div>
             </div>
 

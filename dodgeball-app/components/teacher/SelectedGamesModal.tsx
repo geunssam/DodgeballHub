@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,8 @@ import {
 } from '@/lib/statsHelpers';
 import { FinishedGame, Team, Student } from '@/types';
 import { BADGE_CATEGORIES } from '@/lib/badgeCategories';
+
+type TabType = 'scoreboard' | 'ranking' | 'details';
 
 interface SelectedGamesModalProps {
   isOpen: boolean;
@@ -46,6 +48,11 @@ export function SelectedGamesModal({
   teams,
   students
 }: SelectedGamesModalProps) {
+  // ============================================
+  // State
+  // ============================================
+  const [activeTab, setActiveTab] = useState<TabType>('scoreboard');
+
   // ============================================
   // 데이터 계산 (useMemo로 최적화)
   // ============================================
@@ -117,9 +124,38 @@ export function SelectedGamesModal({
           </div>
         </DialogHeader>
 
+        {/* 탭 버튼 */}
+        <div className="flex gap-2 border-b-2 border-gray-200 pb-2">
+          <Button
+            onClick={() => setActiveTab('scoreboard')}
+            variant={activeTab === 'scoreboard' ? 'default' : 'outline'}
+            size="lg"
+            className="flex-1"
+          >
+            🏆 학급 스코어보드
+          </Button>
+          <Button
+            onClick={() => setActiveTab('ranking')}
+            variant={activeTab === 'ranking' ? 'default' : 'outline'}
+            size="lg"
+            className="flex-1"
+          >
+            👑 MVP & 랭킹
+          </Button>
+          <Button
+            onClick={() => setActiveTab('details')}
+            variant={activeTab === 'details' ? 'default' : 'outline'}
+            size="lg"
+            className="flex-1"
+          >
+            📋 경기 상세
+          </Button>
+        </div>
+
         {/* 모달 내용 */}
         <div className="space-y-6">
           {/* Section 1: 학급별 통합 스코어보드 */}
+          {activeTab === 'scoreboard' && (
           <section className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 shadow-lg">
             <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
               <span>🏆</span>
@@ -170,9 +206,10 @@ export function SelectedGamesModal({
               </table>
             </div>
           </section>
+          )}
 
           {/* Section 2: 통합 MVP 카드 */}
-          {mvps.length > 0 && (
+          {activeTab === 'ranking' && mvps.length > 0 && (
             <section className="bg-gradient-to-br from-yellow-100 via-orange-100 to-red-100 rounded-xl p-8 shadow-xl border-4 border-yellow-400">
               <div
                 className={`space-y-8 ${mvps.length > 1 ? 'divide-y-4 divide-orange-300' : ''}`}
@@ -241,6 +278,7 @@ export function SelectedGamesModal({
           )}
 
           {/* Section 3: 전체 선수 랭킹 */}
+          {activeTab === 'ranking' && (
           <section className="bg-white rounded-xl p-6 shadow-lg border-2 border-gray-200">
             <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
               <span>🎖️</span>
@@ -331,8 +369,10 @@ export function SelectedGamesModal({
               </div>
             </div>
           </section>
+          )}
 
           {/* Section 4: 경기별 상세 기록 */}
+          {activeTab === 'details' && (
           <section className="bg-gray-50 rounded-xl p-6 shadow-lg">
             <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
               <span>📋</span>
@@ -352,24 +392,22 @@ export function SelectedGamesModal({
                     ? game.teams[1].teamId
                     : null);
 
-                // 경기 MVP 계산
-                const gameMVPs = useMemo(() => {
-                  const playersWithPoints = game.records.map((record) => {
-                    const student = students.find((s) => s.id === record.studentId);
-                    return {
-                      id: record.studentId,
-                      name: student?.name || `선수${record.studentId.slice(-4)}`,
-                      totalPoints: calculatePlayerPoints(record)
-                    };
-                  });
+                // 경기 MVP 계산 (Hook 규칙 준수 - useMemo 제거)
+                const playersWithPoints = game.records.map((record) => {
+                  const student = students.find((s) => s.id === record.studentId);
+                  return {
+                    id: record.studentId,
+                    name: student?.name || `선수${record.studentId.slice(-4)}`,
+                    totalPoints: calculatePlayerPoints(record)
+                  };
+                });
 
-                  playersWithPoints.sort((a, b) => b.totalPoints - a.totalPoints);
-                  const topScore = playersWithPoints[0]?.totalPoints || 0;
+                playersWithPoints.sort((a, b) => b.totalPoints - a.totalPoints);
+                const topScore = playersWithPoints[0]?.totalPoints || 0;
 
-                  return topScore > 0
-                    ? playersWithPoints.filter((p) => p.totalPoints === topScore)
-                    : [];
-                }, [game.records, students]);
+                const gameMVPs = topScore > 0
+                  ? playersWithPoints.filter((p) => p.totalPoints === topScore)
+                  : [];
 
                 // 날짜 파싱
                 const gameDate = new Date(game.finishedAt || game.createdAt);
@@ -593,6 +631,7 @@ export function SelectedGamesModal({
               })}
             </div>
           </section>
+          )}
         </div>
 
         {/* 모달 푸터 */}
