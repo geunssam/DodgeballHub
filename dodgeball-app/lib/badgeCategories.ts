@@ -25,18 +25,17 @@ export const BADGE_CATEGORIES: Record<string, BadgeCategory> = {
       'first_game',
       'steady_player',
       'iron_player',
-      'legend_player',
-      'game_enthusiast'
+      'legend_player'
     ],
     color: 'blue'
   },
-  OUTS: {
-    id: 'outs',
-    name: '아웃',
+  HITS: {
+    id: 'hits',
+    name: '히트',
     icon: '🎯',
-    description: '상대 아웃 관련 배지',
+    description: '상대 히트 관련 배지',
     badgeIds: [
-      'first_out',
+      'first_hit',
       'fire_shooter',
       'fire_sniper',
       'legendary_catcher'
@@ -51,7 +50,8 @@ export const BADGE_CATEGORIES: Record<string, BadgeCategory> = {
     badgeIds: [
       'first_pass',
       'pass_master',
-      'cooperation_master'
+      'cooperation_master',
+      'pass_legend'
     ],
     color: 'green'
   },
@@ -63,7 +63,8 @@ export const BADGE_CATEGORIES: Record<string, BadgeCategory> = {
     badgeIds: [
       'first_sacrifice',
       'kind_heart',
-      'angel_heart'
+      'angel_heart',
+      'sacrifice_legend'
     ],
     color: 'purple'
   },

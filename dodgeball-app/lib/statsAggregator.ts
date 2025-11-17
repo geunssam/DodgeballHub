@@ -27,7 +27,7 @@ function findOriginalTeam(playerId: string, teams: Team[]): Team | null {
  */
 function createEmptyStats(): StudentStats {
   return {
-    outs: 0,
+    hits: 0,
     passes: 0,
     sacrifices: 0,
     cookies: 0,
@@ -41,7 +41,7 @@ function createEmptyStats(): StudentStats {
  */
 function mergeStats(stats1: StudentStats, stats2: StudentStats): StudentStats {
   return {
-    outs: (stats1.outs || 0) + (stats2.outs || 0),
+    hits: (stats1.hits || 0) + (stats2.hits || 0),
     passes: (stats1.passes || 0) + (stats2.passes || 0),
     sacrifices: (stats1.sacrifices || 0) + (stats2.sacrifices || 0),
     cookies: (stats1.cookies || 0) + (stats2.cookies || 0),
@@ -110,12 +110,12 @@ export function aggregatePlayerStats(
           teamName: gameTeam.name,
           isOriginalTeam: isOriginalTeamGame,
           stats: {
-            outs: playerRecord.outs || 0,
+            hits: playerRecord.hits || 0,
             passes: playerRecord.passes || 0,
             sacrifices: playerRecord.sacrifices || 0,
             cookies: playerRecord.cookies || 0,
             gamesPlayed: 1,
-            totalScore: (playerRecord.outs || 0) + (playerRecord.passes || 0) +
+            totalScore: (playerRecord.hits || 0) + (playerRecord.passes || 0) +
                        (playerRecord.sacrifices || 0) + (playerRecord.cookies || 0)
           },
           newBadges: [], // 경기 종료 시 추가됨
@@ -128,12 +128,12 @@ export function aggregatePlayerStats(
           playerStatsMap[playerId].stats = mergeStats(
             playerStatsMap[playerId].stats,
             {
-              outs: playerRecord.outs || 0,
+              hits: playerRecord.hits || 0,
               passes: playerRecord.passes || 0,
               sacrifices: playerRecord.sacrifices || 0,
               cookies: playerRecord.cookies || 0,
               gamesPlayed: 1,
-              totalScore: (playerRecord.outs || 0) + (playerRecord.passes || 0) +
+              totalScore: (playerRecord.hits || 0) + (playerRecord.passes || 0) +
                          (playerRecord.sacrifices || 0) + (playerRecord.cookies || 0)
             }
           );
@@ -267,7 +267,7 @@ export function filterPlayers(
       break;
 
     case PlayerFilterOptions.HAS_OUTS:
-      players = players.filter(p => p.stats.outs > 0);
+      players = players.filter(p => p.stats.hits > 0);
       break;
 
     case PlayerFilterOptions.MVP_TOP_10:

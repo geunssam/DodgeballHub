@@ -11,7 +11,7 @@ import { getPlayerHistory } from './dataService';
  * 팀 통계 인터페이스
  */
 export interface TeamStats {
-  totalOuts: number;
+  totalHits: number;
   totalPasses: number;
   totalSacrifices: number;
   totalCookies: number;
@@ -33,7 +33,7 @@ export const calculateTeamStats = async (
   try {
     if (!teamMembers || teamMembers.length === 0) {
       return {
-        totalOuts: 0,
+        totalHits: 0,
         totalPasses: 0,
         totalSacrifices: 0,
         totalCookies: 0,
@@ -50,7 +50,7 @@ export const calculateTeamStats = async (
       const history = await getPlayerHistory(teacherId, playerId);
 
       let stats = {
-        outs: 0,
+        hits: 0,
         passes: 0,
         sacrifices: 0,
         cookies: 0,
@@ -64,7 +64,7 @@ export const calculateTeamStats = async (
 
         history.games.forEach(game => {
           if (game.stats) {
-            stats.outs += game.stats.outs || 0;
+            stats.hits += game.stats.hits || 0;
             stats.passes += game.stats.passes || 0;
             stats.sacrifices += game.stats.sacrifices || 0;
             stats.cookies += game.stats.cookies || 0;
@@ -94,14 +94,14 @@ export const calculateTeamStats = async (
     // 팀 전체 합계 계산
     const teamTotal = results.reduce(
       (acc, stats) => ({
-        totalOuts: acc.totalOuts + stats.outs,
+        totalHits: acc.totalHits + stats.hits,
         totalPasses: acc.totalPasses + stats.passes,
         totalSacrifices: acc.totalSacrifices + stats.sacrifices,
         totalCookies: acc.totalCookies + stats.cookies,
         totalBadges: acc.totalBadges + stats.badges
       }),
       {
-        totalOuts: 0,
+        totalHits: 0,
         totalPasses: 0,
         totalSacrifices: 0,
         totalCookies: 0,
@@ -115,7 +115,7 @@ export const calculateTeamStats = async (
   } catch (error) {
     console.error('❌ [teamStatsCalculator] 팀 통계 계산 실패:', error);
     return {
-      totalOuts: 0,
+      totalHits: 0,
       totalPasses: 0,
       totalSacrifices: 0,
       totalCookies: 0,

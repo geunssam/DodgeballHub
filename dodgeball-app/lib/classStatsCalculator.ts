@@ -13,7 +13,7 @@ import { getPlayerHistory } from './dataService';
  * 학급별 통계 인터페이스
  */
 interface ClassStats {
-  totalOuts: number;
+  totalHits: number;
   totalPasses: number;
   totalSacrifices: number;
   totalCookies: number;
@@ -24,7 +24,7 @@ interface ClassStats {
  * 개별 학생 통계 인터페이스
  */
 interface StudentStatsResult {
-  outs: number;
+  hits: number;
   passes: number;
   sacrifices: number;
   cookies: number;
@@ -59,7 +59,7 @@ export const calculateAllClassStats = async (
         const history = await getPlayerHistory(teacherId, student.id);
 
         let stats = {
-          outs: 0,
+          hits: 0,
           passes: 0,
           sacrifices: 0,
           cookies: 0
@@ -67,7 +67,7 @@ export const calculateAllClassStats = async (
 
         if (history && history.games) {
           history.games.forEach(game => {
-            stats.outs += game.stats?.outs || 0;
+            stats.hits += game.stats?.hits || 0;
             stats.passes += game.stats?.passes || 0;
             stats.sacrifices += game.stats?.sacrifices || 0;
             stats.cookies += game.stats?.cookies || 0;
@@ -79,7 +79,7 @@ export const calculateAllClassStats = async (
           const playerRecord = game.records.find(r => r.studentId === student.id);
 
           if (playerRecord) {
-            stats.outs += playerRecord.outs || 0;
+            stats.hits += playerRecord.hits || 0;
             stats.passes += playerRecord.passes || 0;
             stats.sacrifices += playerRecord.sacrifices || 0;
             stats.cookies += playerRecord.cookies || 0;
@@ -93,7 +93,7 @@ export const calculateAllClassStats = async (
 
       // 학급별 집계
       const classStats: ClassStats = {
-        totalOuts: 0,
+        totalHits: 0,
         totalPasses: 0,
         totalSacrifices: 0,
         totalCookies: 0,
@@ -101,7 +101,7 @@ export const calculateAllClassStats = async (
       };
 
       results.forEach(stats => {
-        classStats.totalOuts += stats.outs;
+        classStats.totalHits += stats.hits;
         classStats.totalPasses += stats.passes;
         classStats.totalSacrifices += stats.sacrifices;
         classStats.totalCookies += stats.cookies;
@@ -138,7 +138,7 @@ export const calculateClassStats = async (
 ): Promise<ClassStats> => {
   const allStats = await calculateAllClassStats(teacherId);
   return allStats[className] || {
-    totalOuts: 0,
+    totalHits: 0,
     totalPasses: 0,
     totalSacrifices: 0,
     totalCookies: 0,
@@ -173,7 +173,7 @@ export const calculateStudentStats = async (
       const history = await getPlayerHistory(teacherId, studentId);
 
       let stats: StudentStatsResult = {
-        outs: 0,
+        hits: 0,
         passes: 0,
         sacrifices: 0,
         cookies: 0
@@ -181,7 +181,7 @@ export const calculateStudentStats = async (
 
       if (history && history.games) {
         history.games.forEach(game => {
-          stats.outs += game.stats?.outs || 0;
+          stats.hits += game.stats?.hits || 0;
           stats.passes += game.stats?.passes || 0;
           stats.sacrifices += game.stats?.sacrifices || 0;
           stats.cookies += game.stats?.cookies || 0;
@@ -193,7 +193,7 @@ export const calculateStudentStats = async (
         const playerRecord = game.records.find(r => r.studentId === studentId);
 
         if (playerRecord) {
-          stats.outs += playerRecord.outs || 0;
+          stats.hits += playerRecord.hits || 0;
           stats.passes += playerRecord.passes || 0;
           stats.sacrifices += playerRecord.sacrifices || 0;
           stats.cookies += playerRecord.cookies || 0;

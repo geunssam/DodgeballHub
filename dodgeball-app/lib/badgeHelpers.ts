@@ -214,7 +214,7 @@ export function clearCustomBadges(): void {
 export async function checkAndAwardBadges(
   student: Student,
   gameStats: {
-    outs: number;
+    hits: number;
     passes: number;
     sacrifices: number;
     cookies: number;
@@ -228,7 +228,7 @@ export async function checkAndAwardBadges(
 
   // 이번 경기 스탯을 더한 누적 통계 (업데이트 전)
   const newTotalStats: StudentStats = {
-    outs: student.stats.outs + gameStats.outs,
+    hits: student.stats.hits + gameStats.hits,
     passes: student.stats.passes + gameStats.passes,
     sacrifices: student.stats.sacrifices + gameStats.sacrifices,
     cookies: student.stats.cookies + gameStats.cookies,
@@ -237,7 +237,7 @@ export async function checkAndAwardBadges(
   };
 
   newTotalStats.totalScore =
-    newTotalStats.outs +
+    newTotalStats.hits +
     newTotalStats.passes +
     newTotalStats.sacrifices +
     newTotalStats.cookies;

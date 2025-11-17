@@ -82,7 +82,7 @@ function calculateCurrent(badge: BadgeDefinition, stats: StudentStats): number {
     case 'games':
       return stats.gamesPlayed;
     case 'outs':
-      return stats.outs;
+      return stats.hits;
     case 'passes':
       return stats.passes;
     case 'sacrifices':
@@ -94,7 +94,7 @@ function calculateCurrent(badge: BadgeDefinition, stats: StudentStats): number {
       if (badge.id === 'perfect_teamplayer') {
         // 최소값 반환 (가장 부족한 스탯)
         return Math.min(
-          stats.outs,
+          stats.hits,
           stats.passes,
           Math.floor(stats.sacrifices * 2) // 양보는 목표가 10이므로 2배
         );

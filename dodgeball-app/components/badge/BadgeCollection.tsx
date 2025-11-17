@@ -322,7 +322,7 @@ export default function BadgeCollection({ classId, students, onBack }: BadgeColl
         <TabsList className="w-full grid grid-cols-8 rounded-none border-b flex-shrink-0">
           <TabsTrigger value="all">전체</TabsTrigger>
           <TabsTrigger value="games">경기</TabsTrigger>
-          <TabsTrigger value="outs">아웃</TabsTrigger>
+          <TabsTrigger value="hits">히트</TabsTrigger>
           <TabsTrigger value="passes">패스</TabsTrigger>
           <TabsTrigger value="sacrifices">양보</TabsTrigger>
           <TabsTrigger value="cookies">쿠키</TabsTrigger>
@@ -332,7 +332,7 @@ export default function BadgeCollection({ classId, students, onBack }: BadgeColl
 
         {/* 전체 탭 */}
         <TabsContent value="all" className="flex-1 w-full max-w-full overflow-y-auto px-4 pt-4 pb-12 mt-0 min-h-0">
-          <div className="w-full max-w-full grid grid-cols-5 gap-x-4 gap-y-6">
+          <div className="w-full max-w-full grid grid-cols-4 gap-x-4 gap-y-6">
             {allBadges.map(badge => (
               <BadgeCard
                 key={badge.id}
@@ -349,7 +349,7 @@ export default function BadgeCollection({ classId, students, onBack }: BadgeColl
         {selectedCategory !== 'all' && (
           <TabsContent value={selectedCategory} className="flex-1 w-full max-w-full overflow-y-auto px-4 pt-4 pb-12 mt-0 min-h-0">
             {sortedBadges.length > 0 ? (
-              <div className="w-full max-w-full grid grid-cols-5 gap-x-4 gap-y-6">
+              <div className="w-full max-w-full grid grid-cols-4 gap-x-4 gap-y-6">
                 {sortedBadges.map(badge => (
                   <BadgeCard
                     key={badge.id}

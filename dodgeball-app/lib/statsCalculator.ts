@@ -15,7 +15,7 @@ import { StudentStats, GameRecord } from '@/types';
  */
 export function calculateTotalScore(stats: StudentStats): number {
   const score =
-    stats.outs +
+    stats.hits +
     stats.passes +
     stats.sacrifices +
     stats.cookies;
@@ -35,7 +35,7 @@ export function addGameRecordToStats(
   gameRecord: GameRecord
 ): StudentStats {
   const updatedStats: StudentStats = {
-    outs: currentStats.outs + gameRecord.outs,
+    hits: currentStats.hits + gameRecord.hits,
     passes: currentStats.passes + gameRecord.passes,
     sacrifices: currentStats.sacrifices + gameRecord.sacrifices,
     cookies: currentStats.cookies + gameRecord.cookies,
@@ -76,7 +76,7 @@ export function addMultipleGameRecords(
  */
 export function createEmptyStats(): StudentStats {
   return {
-    outs: 0,
+    hits: 0,
     passes: 0,
     sacrifices: 0,
     cookies: 0,
@@ -93,13 +93,13 @@ export function createEmptyStats(): StudentStats {
  */
 export function isValidStats(stats: StudentStats): boolean {
   return (
-    typeof stats.outs === 'number' &&
+    typeof stats.hits === 'number' &&
     typeof stats.passes === 'number' &&
     typeof stats.sacrifices === 'number' &&
     typeof stats.cookies === 'number' &&
     typeof stats.gamesPlayed === 'number' &&
     typeof stats.totalScore === 'number' &&
-    stats.outs >= 0 &&
+    stats.hits >= 0 &&
     stats.passes >= 0 &&
     stats.sacrifices >= 0 &&
     stats.cookies >= 0 &&
@@ -116,7 +116,7 @@ export function isValidStats(stats: StudentStats): boolean {
  */
 export function normalizeStats(stats: StudentStats): StudentStats {
   const normalized: StudentStats = {
-    outs: Math.max(0, stats.outs || 0),
+    hits: Math.max(0, stats.hits || 0),
     passes: Math.max(0, stats.passes || 0),
     sacrifices: Math.max(0, stats.sacrifices || 0),
     cookies: Math.max(0, stats.cookies || 0),

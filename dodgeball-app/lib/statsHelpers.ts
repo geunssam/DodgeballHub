@@ -9,7 +9,7 @@ import type { Student, StudentStats, Team, TeamMemberAssignment } from '@/types'
  * 학급 전체 통계
  */
 export interface ClassStats {
-  totalOuts: number;
+  totalHits: number;
   totalPasses: number;
   totalSacrifices: number;
   totalCookies: number;
@@ -22,7 +22,7 @@ export interface ClassStats {
  * 팀 전체 통계
  */
 export interface TeamStats {
-  totalOuts: number;
+  totalHits: number;
   totalPasses: number;
   totalSacrifices: number;
   totalCookies: number;
@@ -47,7 +47,7 @@ export interface EnrichedStudentStats extends StudentStats {
 export function calculateClassStats(students: Student[]): ClassStats {
   if (!students || students.length === 0) {
     return {
-      totalOuts: 0,
+      totalHits: 0,
       totalPasses: 0,
       totalSacrifices: 0,
       totalCookies: 0,
@@ -60,7 +60,7 @@ export function calculateClassStats(students: Student[]): ClassStats {
   const stats = students.reduce(
     (acc, student) => {
       const studentStats = student.stats || {
-        outs: 0,
+        hits: 0,
         passes: 0,
         sacrifices: 0,
         cookies: 0,
@@ -69,7 +69,7 @@ export function calculateClassStats(students: Student[]): ClassStats {
       };
 
       return {
-        totalOuts: acc.totalOuts + (studentStats.outs || 0),
+        totalHits: acc.totalHits + (studentStats.hits || 0),
         totalPasses: acc.totalPasses + (studentStats.passes || 0),
         totalSacrifices: acc.totalSacrifices + (studentStats.sacrifices || 0),
         totalCookies: acc.totalCookies + (studentStats.cookies || 0),
@@ -79,7 +79,7 @@ export function calculateClassStats(students: Student[]): ClassStats {
       };
     },
     {
-      totalOuts: 0,
+      totalHits: 0,
       totalPasses: 0,
       totalSacrifices: 0,
       totalCookies: 0,
@@ -100,7 +100,7 @@ export function calculateClassStats(students: Student[]): ClassStats {
  */
 export function calculateStudentStats(student: Student): EnrichedStudentStats {
   const stats = student.stats || {
-    outs: 0,
+    hits: 0,
     passes: 0,
     sacrifices: 0,
     cookies: 0,
@@ -127,7 +127,7 @@ export function calculateTeamStats(
 ): TeamStats {
   if (!team || !team.members || team.members.length === 0) {
     return {
-      totalOuts: 0,
+      totalHits: 0,
       totalPasses: 0,
       totalSacrifices: 0,
       totalCookies: 0,
@@ -144,7 +144,7 @@ export function calculateTeamStats(
       if (!student) return acc;
 
       const stats = student.stats || {
-        outs: 0,
+        hits: 0,
         passes: 0,
         sacrifices: 0,
         cookies: 0,
@@ -153,7 +153,7 @@ export function calculateTeamStats(
       };
 
       return {
-        totalOuts: acc.totalOuts + (stats.outs || 0),
+        totalHits: acc.totalHits + (stats.hits || 0),
         totalPasses: acc.totalPasses + (stats.passes || 0),
         totalSacrifices: acc.totalSacrifices + (stats.sacrifices || 0),
         totalCookies: acc.totalCookies + (stats.cookies || 0),
@@ -163,7 +163,7 @@ export function calculateTeamStats(
       };
     },
     {
-      totalOuts: 0,
+      totalHits: 0,
       totalPasses: 0,
       totalSacrifices: 0,
       totalCookies: 0,
@@ -180,7 +180,7 @@ export function calculateTeamStats(
  * 통계 아이콘과 값을 반환하는 헬퍼
  */
 export const STAT_ICONS = {
-  outs: '⚾',
+  hits: '⚾',
   passes: '🏃',
   sacrifices: '🛡️',
   cookies: '🍪',
@@ -198,8 +198,8 @@ export function formatStatsWithIcons(
 ): Array<{ icon: string; value: number; label: string }> {
   return [
     {
-      icon: STAT_ICONS.outs,
-      value: 'totalOuts' in stats ? stats.totalOuts : stats.outs,
+      icon: STAT_ICONS.hits,
+      value: 'totalHits' in stats ? stats.totalHits : stats.hits,
       label: '아웃',
     },
     {
@@ -240,7 +240,7 @@ export function calculatePlayerPoints(stats: {
   if (!stats) return 0;
 
   return (
-    (stats.outs || 0) +
+    (stats.hits || 0) +
     (stats.passes || 0) +
     (stats.sacrifices || 0) +
     (stats.cookies || 0)
@@ -321,7 +321,7 @@ export function aggregatePlayerStatsForIntegratedAnalysis(
     name: string;
     className?: string;
     teamNames: string[];
-    outs: number;
+    hits: number;
     passes: number;
     sacrifices: number;
     cookies: number;
@@ -334,7 +334,7 @@ export function aggregatePlayerStatsForIntegratedAnalysis(
       name: string;
       className?: string;
       teamNames: Set<string>;
-      outs: number;
+      hits: number;
       passes: number;
       sacrifices: number;
       cookies: number;
@@ -367,7 +367,7 @@ export function aggregatePlayerStatsForIntegratedAnalysis(
             name: studentData?.name || `선수${playerId.slice(-4)}`,
             className: finalClassName,
             teamNames: new Set(),
-            outs: 0,
+            hits: 0,
             passes: 0,
             sacrifices: 0,
             cookies: 0,
@@ -385,7 +385,7 @@ export function aggregatePlayerStatsForIntegratedAnalysis(
         // 팀명 추가
         stats.teamNames.add(gameTeam.name);
 
-        stats.outs += playerRecord.outs || 0;
+        stats.hits += playerRecord.hits || 0;
         stats.passes += playerRecord.passes || 0;
         stats.sacrifices += playerRecord.sacrifices || 0;
         stats.cookies += playerRecord.cookies || 0;
@@ -401,7 +401,7 @@ export function aggregatePlayerStatsForIntegratedAnalysis(
       name: string;
       className?: string;
       teamNames: string[];
-      outs: number;
+      hits: number;
       passes: number;
       sacrifices: number;
       cookies: number;

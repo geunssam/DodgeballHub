@@ -18,7 +18,7 @@ export interface Class {
 
 // ===== 학생 =====
 export interface StudentStats {
-  outs: number;
+  hits: number;
   passes: number;
   sacrifices: number;
   cookies: number;
@@ -103,7 +103,7 @@ export interface GameTeam {
 
 export interface GameRecord {
   studentId: string;
-  outs: number;
+  hits: number;
   passes: number;
   sacrifices: number;
   cookies: number;
@@ -208,7 +208,7 @@ export interface PlayerStatsMap {
     name: string;
     className?: string;
     teamNames: string[];       // 출전한 팀명 목록
-    outs: number;
+    hits: number;
     passes: number;
     sacrifices: number;
     cookies: number;
@@ -222,7 +222,7 @@ export interface ClassRankingData {
   totalPoints: number;
   avgPoints: number;
   studentCount: number;
-  totalOuts: number;
+  totalHits: number;
   totalPasses: number;
   totalSacrifices: number;
   totalCookies: number;

@@ -15,7 +15,7 @@ import { StudentStats } from '@/types';
  * - 쿠키: 1점
  */
 const MVP_WEIGHTS = {
-  outs: 1,
+  hits: 1,
   passes: 1,
   sacrifices: 1,
   cookies: 1
@@ -28,7 +28,7 @@ export function calculateMVPScore(stats: StudentStats): number {
   if (!stats) return 0;
 
   return (
-    (stats.outs || 0) * MVP_WEIGHTS.outs +
+    (stats.hits || 0) * MVP_WEIGHTS.hits +
     (stats.passes || 0) * MVP_WEIGHTS.passes +
     (stats.sacrifices || 0) * MVP_WEIGHTS.sacrifices +
     (stats.cookies || 0) * MVP_WEIGHTS.cookies
@@ -122,8 +122,8 @@ export function getMVPGrade(score: number): string {
 export function getMVPScoreDescription(score: number, stats: StudentStats): string {
   const contributions: string[] = [];
 
-  if (stats.outs > 0) {
-    contributions.push(`아웃 ${stats.outs}회`);
+  if (stats.hits > 0) {
+    contributions.push(`아웃 ${stats.hits}회`);
   }
   if (stats.passes > 0) {
     contributions.push(`통과 ${stats.passes}회`);

@@ -32,7 +32,7 @@ export const mockStudents: Student[] = [
     classNumber: 3,
     accessCode: "3-1-김철수",
     stats: {
-      outs: 12,
+      hits: 12,
       passes: 8,
       sacrifices: 5,
       cookies: 15,
@@ -48,7 +48,7 @@ export const mockStudents: Student[] = [
         isAuto: true
       },
       {
-        id: "first_out",
+        id: "first_hit",
         name: "첫 아웃",
         emoji: "🎯",
         awardedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
@@ -72,7 +72,7 @@ export const mockStudents: Student[] = [
     classNumber: 3,
     accessCode: "3-2-이영희",
     stats: {
-      outs: 5,
+      hits: 5,
       passes: 15,
       sacrifices: 12,
       cookies: 8,
@@ -112,7 +112,7 @@ export const mockStudents: Student[] = [
     classNumber: 3,
     accessCode: "3-3-박민수",
     stats: {
-      outs: 8,
+      hits: 8,
       passes: 10,
       sacrifices: 7,
       cookies: 12,
@@ -130,7 +130,7 @@ export const mockStudents: Student[] = [
     classNumber: 3,
     accessCode: "3-4-최지훈",
     stats: {
-      outs: 15,
+      hits: 15,
       passes: 5,
       sacrifices: 3,
       cookies: 10,
@@ -148,7 +148,7 @@ export const mockStudents: Student[] = [
     classNumber: 3,
     accessCode: "3-5-정수진",
     stats: {
-      outs: 3,
+      hits: 3,
       passes: 18,
       sacrifices: 15,
       cookies: 20,
@@ -166,7 +166,7 @@ export const mockStudents: Student[] = [
     classNumber: 3,
     accessCode: "3-6-강민호",
     stats: {
-      outs: 10,
+      hits: 10,
       passes: 12,
       sacrifices: 8,
       cookies: 15,
@@ -184,7 +184,7 @@ export const mockStudents: Student[] = [
     classNumber: 3,
     accessCode: "3-7-윤서연",
     stats: {
-      outs: 7,
+      hits: 7,
       passes: 14,
       sacrifices: 10,
       cookies: 18,
@@ -202,7 +202,7 @@ export const mockStudents: Student[] = [
     classNumber: 3,
     accessCode: "3-8-임동현",
     stats: {
-      outs: 13,
+      hits: 13,
       passes: 6,
       sacrifices: 4,
       cookies: 8,
@@ -220,7 +220,7 @@ export const mockStudents: Student[] = [
     classNumber: 3,
     accessCode: "3-9-한예린",
     stats: {
-      outs: 4,
+      hits: 4,
       passes: 20,
       sacrifices: 13,
       cookies: 25,
@@ -238,7 +238,7 @@ export const mockStudents: Student[] = [
     classNumber: 3,
     accessCode: "3-10-오태양",
     stats: {
-      outs: 11,
+      hits: 11,
       passes: 9,
       sacrifices: 6,
       cookies: 14,
@@ -256,7 +256,7 @@ export const mockStudents: Student[] = [
     classNumber: 3,
     accessCode: "3-11-서하은",
     stats: {
-      outs: 6,
+      hits: 6,
       passes: 16,
       sacrifices: 11,
       cookies: 22,
@@ -346,17 +346,17 @@ export const mockGames: Game[] = [
       }
     ],
     records: [
-      { studentId: "student1", outs: 6, passes: 4, sacrifices: 2, cookies: 8 },
-      { studentId: "student2", outs: 3, passes: 8, sacrifices: 6, cookies: 4 },
-      { studentId: "student3", outs: 4, passes: 5, sacrifices: 3, cookies: 6 },
-      { studentId: "student4", outs: 8, passes: 2, sacrifices: 1, cookies: 5 },
-      { studentId: "student5", outs: 1, passes: 9, sacrifices: 7, cookies: 10 },
-      { studentId: "student6", outs: 5, passes: 6, sacrifices: 4, cookies: 7 },
-      { studentId: "student7", outs: 3, passes: 7, sacrifices: 5, cookies: 9 },
-      { studentId: "student8", outs: 7, passes: 3, sacrifices: 2, cookies: 4 },
-      { studentId: "student9", outs: 2, passes: 10, sacrifices: 6, cookies: 12 },
-      { studentId: "student10", outs: 5, passes: 4, sacrifices: 3, cookies: 7 },
-      { studentId: "student11", outs: 3, passes: 8, sacrifices: 5, cookies: 11 }
+      { studentId: "student1", hits: 6, passes: 4, sacrifices: 2, cookies: 8 },
+      { studentId: "student2", hits: 3, passes: 8, sacrifices: 6, cookies: 4 },
+      { studentId: "student3", hits: 4, passes: 5, sacrifices: 3, cookies: 6 },
+      { studentId: "student4", hits: 8, passes: 2, sacrifices: 1, cookies: 5 },
+      { studentId: "student5", hits: 1, passes: 9, sacrifices: 7, cookies: 10 },
+      { studentId: "student6", hits: 5, passes: 6, sacrifices: 4, cookies: 7 },
+      { studentId: "student7", hits: 3, passes: 7, sacrifices: 5, cookies: 9 },
+      { studentId: "student8", hits: 7, passes: 3, sacrifices: 2, cookies: 4 },
+      { studentId: "student9", hits: 2, passes: 10, sacrifices: 6, cookies: 12 },
+      { studentId: "student10", hits: 5, passes: 4, sacrifices: 3, cookies: 7 },
+      { studentId: "student11", hits: 3, passes: 8, sacrifices: 5, cookies: 11 }
     ],
     winner: "team_class1_1700000001000_mockred001",
     isCompleted: true,
@@ -404,17 +404,17 @@ export const mockGames: Game[] = [
       }
     ],
     records: [
-      { studentId: "student1", outs: 6, passes: 4, sacrifices: 3, cookies: 7 },
-      { studentId: "student2", outs: 2, passes: 7, sacrifices: 6, cookies: 4 },
-      { studentId: "student3", outs: 4, passes: 5, sacrifices: 4, cookies: 6 },
-      { studentId: "student4", outs: 7, passes: 3, sacrifices: 2, cookies: 5 },
-      { studentId: "student5", outs: 2, passes: 9, sacrifices: 8, cookies: 10 },
-      { studentId: "student6", outs: 5, passes: 6, sacrifices: 4, cookies: 8 },
-      { studentId: "student7", outs: 4, passes: 7, sacrifices: 5, cookies: 9 },
-      { studentId: "student8", outs: 6, passes: 3, sacrifices: 2, cookies: 4 },
-      { studentId: "student9", outs: 2, passes: 10, sacrifices: 7, cookies: 13 },
-      { studentId: "student10", outs: 6, passes: 5, sacrifices: 3, cookies: 7 },
-      { studentId: "student11", outs: 3, passes: 8, sacrifices: 6, cookies: 11 }
+      { studentId: "student1", hits: 6, passes: 4, sacrifices: 3, cookies: 7 },
+      { studentId: "student2", hits: 2, passes: 7, sacrifices: 6, cookies: 4 },
+      { studentId: "student3", hits: 4, passes: 5, sacrifices: 4, cookies: 6 },
+      { studentId: "student4", hits: 7, passes: 3, sacrifices: 2, cookies: 5 },
+      { studentId: "student5", hits: 2, passes: 9, sacrifices: 8, cookies: 10 },
+      { studentId: "student6", hits: 5, passes: 6, sacrifices: 4, cookies: 8 },
+      { studentId: "student7", hits: 4, passes: 7, sacrifices: 5, cookies: 9 },
+      { studentId: "student8", hits: 6, passes: 3, sacrifices: 2, cookies: 4 },
+      { studentId: "student9", hits: 2, passes: 10, sacrifices: 7, cookies: 13 },
+      { studentId: "student10", hits: 6, passes: 5, sacrifices: 3, cookies: 7 },
+      { studentId: "student11", hits: 3, passes: 8, sacrifices: 6, cookies: 11 }
     ],
     winner: "team_class1_1700000002000_mockblue001",
     isCompleted: true,
