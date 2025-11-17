@@ -77,7 +77,7 @@ export const BADGES: Record<string, BadgeDefinition> = {
   },
   FIRE_SHOOTER: {
     id: 'fire_shooter',
-    name: '불꽃 슈터',
+    name: '히트 메이커',
     icon: '🔥',
     tier: BADGE_TIERS.SKILLED,
     description: '히트 5개 달성!',
@@ -86,7 +86,7 @@ export const BADGES: Record<string, BadgeDefinition> = {
   },
   FIRE_SNIPER: {
     id: 'fire_sniper',
-    name: '화염 저격수',
+    name: '히트왕',
     icon: '🎯🔥',
     tier: BADGE_TIERS.MASTER,
     description: '히트 15개 달성!',
@@ -95,7 +95,7 @@ export const BADGES: Record<string, BadgeDefinition> = {
   },
   LEGENDARY_CATCHER: {
     id: 'legendary_catcher',
-    name: '전설의 포수',
+    name: '레전드 히터',
     icon: '👑🔥',
     tier: BADGE_TIERS.LEGEND,
     description: '히트 30개 달성!',
@@ -123,7 +123,7 @@ export const BADGES: Record<string, BadgeDefinition> = {
   },
   COOPERATION_MASTER: {
     id: 'cooperation_master',
-    name: '협동의 마스터',
+    name: '패스왕',
     icon: '🏅',
     tier: BADGE_TIERS.MASTER,
     description: '패스 15개 달성!',
@@ -132,7 +132,7 @@ export const BADGES: Record<string, BadgeDefinition> = {
   },
   PASS_LEGEND: {
     id: 'pass_legend',
-    name: '패스의 전설',
+    name: '레전드 패서',
     icon: '👑🤝',
     tier: BADGE_TIERS.LEGEND,
     description: '패스 30개 달성!',
@@ -160,7 +160,7 @@ export const BADGES: Record<string, BadgeDefinition> = {
   },
   ANGEL_HEART: {
     id: 'angel_heart',
-    name: '천사의 심장',
+    name: '양보왕',
     icon: '😇',
     tier: BADGE_TIERS.MASTER,
     description: '양보 15개 달성!',
@@ -169,7 +169,7 @@ export const BADGES: Record<string, BadgeDefinition> = {
   },
   SACRIFICE_LEGEND: {
     id: 'sacrifice_legend',
-    name: '양보의 전설',
+    name: '레전드 천사',
     icon: '👑💚',
     tier: BADGE_TIERS.LEGEND,
     description: '양보 30개 달성!',
