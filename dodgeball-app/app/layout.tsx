@@ -28,11 +28,11 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-hidden`}
       >
         <MigrationProvider>
           <NavBar />
-          <div className="flex-grow">
+          <div style={{ height: 'calc(100vh - 4rem - 3rem)', overflow: 'hidden' }}>
             {children}
           </div>
           <Footer />
