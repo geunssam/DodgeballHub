@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { ClassCard } from '@/components/teacher/ClassCard';
 import { TeamCard } from '@/components/teacher/TeamCard';
 import { StudentCard } from '@/components/teacher/StudentCard';
+import { ClassDetailModal } from '@/components/teacher/ClassDetailModal';
 import { getClasses, getStudents, getTeams, deleteClass, deleteTeam, updateClass, updateTeam, createTeam } from '@/lib/dataService';
 import { randomTeamAssignment, assignTeamColor } from '@/lib/teamUtils';
 import { STORAGE_KEYS } from '@/lib/mockData';
@@ -31,6 +32,10 @@ export default function ManagementPage() {
   // 선택된 학급/팀
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+
+  // 모달 상태
+  const [isClassDetailModalOpen, setIsClassDetailModalOpen] = useState(false);
+  const [selectedClassForModal, setSelectedClassForModal] = useState<Class | null>(null);
 
   useEffect(() => {
     loadData();
@@ -344,53 +349,53 @@ export default function ManagementPage() {
                     return (
                       <Card
                         key={classItem.id}
-                        className={`relative py-3 px-3 cursor-pointer transition-all hover:shadow-md ${
-                          selectedClassId === classItem.id ? 'ring-2 ring-primary bg-primary/5' : ''
-                        }`}
-                        onClick={() => setSelectedClassId(selectedClassId === classItem.id ? null : classItem.id)}
+                        className="relative py-3 px-3 cursor-pointer transition-all hover:shadow-md"
+                        onClick={() => {
+                          setSelectedClassForModal(classItem);
+                          setIsClassDetailModalOpen(true);
+                        }}
                       >
-                        {/* 1행: 학급명 | 인원 | 총점 */}
-                        <div className="flex items-center justify-center gap-2 text-base mb-2">
-                          <span className="font-bold text-foreground text-lg">
-                            {classItem.name}
-                          </span>
-                          <span className="text-muted-foreground">|</span>
-                          <span className="text-sm text-muted-foreground">
-                            {students.length}명
-                          </span>
-                          <span className="text-muted-foreground">|</span>
-                          <span className="flex items-center gap-1" title="총점">
-                            <span className="text-base">📊</span>
-                            <span className="font-semibold text-base text-blue-600">
-                              {totalScore}
+                        <div className="flex flex-col items-center justify-center gap-1.5">
+                          {/* 1행: 학급명 | 인원 | 총점 */}
+                          <div className="flex items-center justify-center gap-2 text-base">
+                            <span className="font-bold text-foreground text-lg">
+                              {classItem.name}
                             </span>
-                          </span>
-                        </div>
+                            <span className="text-muted-foreground">|</span>
+                            <span className="text-sm text-muted-foreground">
+                              {students.length}명
+                            </span>
+                            <span className="text-muted-foreground">|</span>
+                            <span className="font-bold text-base text-blue-600">
+                              📊 {totalScore}
+                            </span>
+                          </div>
 
-                        {/* 2행: 스탯별 점수 + 배지 */}
-                        <div className="flex items-center justify-center gap-3 text-base">
-                          <span className="flex items-center gap-1" title="아웃">
-                            <span className="text-base">🎯</span>
-                            <span className="font-semibold text-base">{totalOuts}</span>
-                          </span>
-                          <span className="flex items-center gap-1" title="패스">
-                            <span className="text-base">✋</span>
-                            <span className="font-semibold text-base">{totalPasses}</span>
-                          </span>
-                          <span className="flex items-center gap-1" title="희생">
-                            <span className="text-base">❤️</span>
-                            <span className="font-semibold text-base">{totalSacrifices}</span>
-                          </span>
-                          <span className="flex items-center gap-1" title="쿠키">
-                            <span className="text-base">🍪</span>
-                            <span className="font-semibold text-base">{totalCookies}</span>
-                          </span>
-                          <span className="flex items-center gap-1" title="배지">
-                            <span className="text-base">🏆</span>
-                            <span className="font-semibold text-base text-yellow-600">
-                              {totalBadges}
+                          {/* 2행: 스탯별 점수 + 배지 */}
+                          <div className="flex items-center justify-center gap-2.5 text-base">
+                            <span className="flex items-center gap-0.5" title="아웃">
+                              <span className="text-base">🎯</span>
+                              <span className="font-semibold text-base">{totalOuts}</span>
                             </span>
-                          </span>
+                            <span className="flex items-center gap-0.5" title="패스">
+                              <span className="text-base">✋</span>
+                              <span className="font-semibold text-base">{totalPasses}</span>
+                            </span>
+                            <span className="flex items-center gap-0.5" title="희생">
+                              <span className="text-base">❤️</span>
+                              <span className="font-semibold text-base">{totalSacrifices}</span>
+                            </span>
+                            <span className="flex items-center gap-0.5" title="쿠키">
+                              <span className="text-base">🍪</span>
+                              <span className="font-semibold text-base">{totalCookies}</span>
+                            </span>
+                            <span className="flex items-center gap-0.5" title="배지">
+                              <span className="text-base">🏆</span>
+                              <span className="font-semibold text-base text-yellow-600">
+                                {totalBadges}
+                              </span>
+                            </span>
+                          </div>
                         </div>
                       </Card>
                     );
@@ -444,78 +449,6 @@ export default function ManagementPage() {
                 </div>
               )}
 
-              {/* 선택된 학급 학생 목록 (하단) */}
-              {selectedClassId ? (
-                <Card className="p-4 flex flex-col max-h-[calc(100vh-16rem)]">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-foreground">
-                      {classes.find(c => c.id === selectedClassId)?.name} 학생 목록
-                    </h3>
-                    <Button
-                      onClick={() => handleRandomTeamGeneration(selectedClassId)}
-                      className="bg-green-500 hover:bg-green-600 text-white font-bold px-6 py-2"
-                    >
-                      🎲 랜덤 팀 생성 (2팀)
-                    </Button>
-                  </div>
-
-                  {/* 학생 목록 (4열 그리드) */}
-                  <div className="grid grid-cols-4 gap-3 overflow-y-auto max-h-[600px] pr-2">
-                    {(studentsByClass[selectedClassId] || []).map((student) => (
-                      <StudentCard
-                        key={student.id}
-                        student={student}
-                        className="h-full"
-                      />
-                    ))}
-                  </div>
-
-                  {/* 학급 전체 합계 */}
-                  {selectedClassId && (
-                    <div className="mt-4 pt-4 border-t-2 border-primary/20">
-                      <div className="flex items-center justify-center gap-6 py-3 bg-blue-50 rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">🎯</span>
-                          <span className="font-bold">{(studentsByClass[selectedClassId] || []).reduce((sum, s) => sum + (s.outs || 0), 0)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">✋</span>
-                          <span className="font-bold">{(studentsByClass[selectedClassId] || []).reduce((sum, s) => sum + (s.passes || 0), 0)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">❤️</span>
-                          <span className="font-bold">{(studentsByClass[selectedClassId] || []).reduce((sum, s) => sum + (s.sacrifices || 0), 0)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">🍪</span>
-                          <span className="font-bold">{(studentsByClass[selectedClassId] || []).reduce((sum, s) => sum + (s.cookies || 0), 0)}</span>
-                        </div>
-                        <div className="flex items-center gap-2 ml-4 pl-4 border-l-2 border-blue-300">
-                          <span className="text-lg">📊</span>
-                          <span className="font-bold text-blue-600">
-                            총점: {(studentsByClass[selectedClassId] || []).reduce((sum, s) =>
-                              sum + (s.outs || 0) + (s.passes || 0) + (s.sacrifices || 0) + (s.cookies || 0), 0
-                            )}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">🏆</span>
-                          <span className="font-bold text-yellow-600">
-                            배지: {(studentsByClass[selectedClassId] || []).reduce((sum, s) =>
-                              sum + (s.badges?.length || 0), 0
-                            )}개
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </Card>
-              ) : (
-                <Card className="p-8 text-center text-muted-foreground">
-                  <p className="text-4xl mb-3">📚</p>
-                  <p>학급을 선택하면 학생 목록이 표시됩니다</p>
-                </Card>
-              )}
             </div>
           )}
 
@@ -592,26 +525,26 @@ export default function ManagementPage() {
                           </div>
 
                           {/* 2행: 스탯별 점수 + 배지 */}
-                          <div className="flex items-center justify-center gap-2.5 text-sm">
+                          <div className="flex items-center justify-center gap-2.5 text-base">
                             <span className="flex items-center gap-0.5" title="아웃">
-                              <span>🎯</span>
-                              <span className="font-semibold">{totalOuts}</span>
+                              <span className="text-base">🎯</span>
+                              <span className="font-semibold text-base">{totalOuts}</span>
                             </span>
                             <span className="flex items-center gap-0.5" title="패스">
-                              <span>✋</span>
-                              <span className="font-semibold">{totalPasses}</span>
+                              <span className="text-base">✋</span>
+                              <span className="font-semibold text-base">{totalPasses}</span>
                             </span>
                             <span className="flex items-center gap-0.5" title="희생">
-                              <span>❤️</span>
-                              <span className="font-semibold">{totalSacrifices}</span>
+                              <span className="text-base">❤️</span>
+                              <span className="font-semibold text-base">{totalSacrifices}</span>
                             </span>
                             <span className="flex items-center gap-0.5" title="쿠키">
-                              <span>🍪</span>
-                              <span className="font-semibold">{totalCookies}</span>
+                              <span className="text-base">🍪</span>
+                              <span className="font-semibold text-base">{totalCookies}</span>
                             </span>
                             <span className="flex items-center gap-0.5" title="배지">
-                              <span>🏆</span>
-                              <span className="font-semibold text-yellow-600">{totalBadges}</span>
+                              <span className="text-base">🏆</span>
+                              <span className="font-semibold text-base text-yellow-600">{totalBadges}</span>
                             </span>
                           </div>
                         </div>
@@ -845,6 +778,18 @@ export default function ManagementPage() {
           )}
         </div>
       </div>
+
+      {/* 학급 상세 모달 */}
+      <ClassDetailModal
+        isOpen={isClassDetailModalOpen}
+        onClose={() => {
+          setIsClassDetailModalOpen(false);
+          setSelectedClassForModal(null);
+        }}
+        classData={selectedClassForModal}
+        students={selectedClassForModal ? (studentsByClass[selectedClassForModal.id] || []) : []}
+        onRandomTeamGeneration={selectedClassForModal ? () => handleRandomTeamGeneration(selectedClassForModal.id) : undefined}
+      />
     </main>
   );
 }

@@ -68,32 +68,16 @@ export function TeamCard({
     }
   };
 
-  // 팀 색상 배경
-  const getColorClasses = (color: string): string => {
-    const colorMap: Record<string, string> = {
-      red: 'from-red-50 to-red-100 border-red-200',
-      blue: 'from-blue-50 to-blue-100 border-blue-200',
-      green: 'from-green-50 to-green-100 border-green-200',
-      yellow: 'from-yellow-50 to-yellow-100 border-yellow-200',
-      purple: 'from-purple-50 to-purple-100 border-purple-200',
-      pink: 'from-pink-50 to-pink-100 border-pink-200',
-      orange: 'from-orange-50 to-orange-100 border-orange-200',
-      teal: 'from-teal-50 to-teal-100 border-teal-200',
-    };
-    return colorMap[color] || 'from-gray-50 to-gray-100 border-gray-200';
-  };
-
   return (
     <Card
       className={cn(
-        'h-[280px] cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]',
-        'bg-gradient-to-br',
-        getColorClasses(team.color),
+        'cursor-pointer transition-all hover:shadow-md',
+        'bg-white',
         className
       )}
       onClick={!isEditing ? onClick : undefined}
     >
-      <CardContent className="p-6 tablet:p-8 tablet-lg:p-10 h-full flex flex-col justify-center gap-4">
+      <CardContent className="py-3 px-3 tablet:py-4 tablet:px-4 flex flex-col justify-center gap-2">
         {/* Row 1: 이름 | 멤버 수 | 권한 배지 */}
         <div className="flex items-center justify-between gap-4">
           {/* 팀 이름 */}
@@ -104,7 +88,7 @@ export function TeamCard({
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="text-xl tablet:text-2xl tablet-lg:text-3xl font-bold h-auto py-2"
+                  className="text-lg tablet:text-xl font-bold h-auto py-2"
                   autoFocus
                   onClick={(e) => e.stopPropagation()}
                 />
@@ -127,7 +111,7 @@ export function TeamCard({
               </div>
             ) : (
               <>
-                <h3 className="text-xl tablet:text-2xl tablet-lg:text-3xl font-bold truncate">
+                <h3 className="text-lg tablet:text-xl font-bold truncate">
                   {team.name}
                 </h3>
                 {onRename && !isShared && (
@@ -170,11 +154,11 @@ export function TeamCard({
             </BadgeUI>
 
             {/* 멤버 수 */}
-            <div className="flex flex-col items-center px-4 py-2 bg-white/80 rounded-lg">
-              <div className="text-sm font-medium text-gray-700">
+            <div className="flex flex-col items-center px-3 py-1 bg-white/80 rounded-lg">
+              <div className="text-xs font-medium text-gray-700">
                 멤버
               </div>
-              <div className="text-2xl tablet:text-3xl font-bold text-gray-900">
+              <div className="text-sm tablet:text-base font-bold text-gray-900">
                 {teamStats.memberCount}
               </div>
             </div>
@@ -182,13 +166,13 @@ export function TeamCard({
         </div>
 
         {/* Row 2: 통계 아이콘 */}
-        <div className="flex items-center justify-around gap-2 pt-4 border-t border-white/50">
+        <div className="flex items-center justify-around gap-2 pt-2 border-t border-gray-200">
           {statsWithIcons.map((stat) => (
-            <div key={stat.label} className="flex flex-col items-center gap-1">
-              <div className="text-2xl tablet:text-3xl tablet-lg:text-4xl">
+            <div key={stat.label} className="flex flex-col items-center gap-0.5">
+              <div className="text-base tablet:text-lg">
                 {stat.icon}
               </div>
-              <div className="text-lg tablet:text-xl tablet-lg:text-2xl font-bold text-foreground">
+              <div className="text-sm tablet:text-base font-semibold text-foreground">
                 {stat.value}
               </div>
             </div>
