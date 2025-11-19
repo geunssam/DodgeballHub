@@ -193,10 +193,15 @@ export default function TeacherDashboardPage() {
 
   return (
     <div
-      className={dashboardView === 'dashboard' ? 'bg-background flex flex-col overflow-hidden h-full' : 'min-h-screen bg-background flex flex-col'}
+      className={(dashboardView === 'dashboard' || dashboardView === 'badges') ? 'bg-background flex flex-col overflow-hidden h-screen' : 'min-h-screen bg-background flex flex-col'}
     >
       {/* 메인 콘텐츠 */}
-      <main className={`w-full mx-auto ${dashboardView === 'dashboard' ? 'h-full flex items-start justify-center overflow-hidden px-6' : 'flex-grow py-8 max-w-7xl overflow-y-auto px-6 sm:px-8'}`}>
+      <main className={`w-full mx-auto ${dashboardView === 'dashboard'
+        ? 'h-full flex items-start justify-center overflow-hidden px-6'
+        : dashboardView === 'badges'
+          ? 'h-full overflow-hidden px-6 sm:px-8 py-8 max-w-7xl'
+          : 'flex-grow py-8 max-w-7xl overflow-y-auto px-6 sm:px-8'
+        }`}>
         {/* 대시보드 메인 뷰 */}
         {dashboardView === 'dashboard' && (
           <div className="w-full max-w-5xl pt-40 pb-40">

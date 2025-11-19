@@ -56,9 +56,8 @@ const BadgeCard: React.FC<BadgeCardProps> = ({ badge, acquiredCount, totalStuden
 
   return (
     <Card
-      className={`w-full p-3 bg-card transition-all hover:scale-105 cursor-pointer ${
-        isAcquired ? 'border-primary/50 hover:border-primary' : 'hover:border-muted-foreground/50'
-      }`}
+      className={`w-full p-3 bg-card transition-all hover:scale-105 cursor-pointer ${isAcquired ? 'border-primary/50 hover:border-primary' : 'hover:border-muted-foreground/50'
+        }`}
       onClick={onClick}
     >
       <div className="flex flex-col items-center text-center gap-1.5">
@@ -81,7 +80,7 @@ const BadgeCard: React.FC<BadgeCardProps> = ({ badge, acquiredCount, totalStuden
         </Badge>
 
         {/* 설명 */}
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground line-clamp-1">
           {badge.description}
         </p>
 
@@ -277,9 +276,9 @@ export default function BadgeCollection({ classId, students, onBack }: BadgeColl
   };
 
   return (
-    <div className="w-full max-w-full h-full flex flex-col bg-background min-h-0">
+    <div className="w-full max-w-full h-full flex flex-col bg-background min-h-0 pt-10">
       {/* 헤더 (baseball-firebase 스타일) */}
-      <div className="border-b bg-card p-3 flex-shrink-0">
+      <div className="border-b bg-card px-6 py-5 flex-shrink-0">
         <div className="flex items-center justify-between">
           {/* 좌측: 대시보드 버튼 */}
           {onBack && (
@@ -318,7 +317,7 @@ export default function BadgeCollection({ classId, students, onBack }: BadgeColl
       </div>
 
       {/* 카테고리별 탭 필터 */}
-      <Tabs defaultValue="all" onValueChange={(value) => setSelectedCategory(value)} className="flex-1 w-full max-w-full flex flex-col min-h-0 overflow-hidden">
+      <Tabs defaultValue="all" onValueChange={(value) => setSelectedCategory(value)} className="flex-1 w-full max-w-full flex flex-col min-h-0 overflow-hidden mt-2">
         <TabsList className="w-full grid grid-cols-8 rounded-none border-b flex-shrink-0">
           <TabsTrigger value="all">전체</TabsTrigger>
           <TabsTrigger value="games">경기</TabsTrigger>
@@ -332,7 +331,7 @@ export default function BadgeCollection({ classId, students, onBack }: BadgeColl
 
         {/* 전체 탭 */}
         <TabsContent value="all" className="flex-1 w-full max-w-full overflow-y-auto px-4 pt-4 pb-12 mt-0 min-h-0">
-          <div className="w-full max-w-full grid grid-cols-4 gap-x-4 gap-y-6">
+          <div className="w-full max-w-full grid grid-cols-4 gap-x-4 gap-y-4">
             {allBadges.map(badge => (
               <BadgeCard
                 key={badge.id}
@@ -349,7 +348,7 @@ export default function BadgeCollection({ classId, students, onBack }: BadgeColl
         {selectedCategory !== 'all' && (
           <TabsContent value={selectedCategory} className="flex-1 w-full max-w-full overflow-y-auto px-4 pt-4 pb-12 mt-0 min-h-0">
             {sortedBadges.length > 0 ? (
-              <div className="w-full max-w-full grid grid-cols-4 gap-x-4 gap-y-6">
+              <div className="w-full max-w-full grid grid-cols-4 gap-x-4 gap-y-4">
                 {sortedBadges.map(badge => (
                   <BadgeCard
                     key={badge.id}
