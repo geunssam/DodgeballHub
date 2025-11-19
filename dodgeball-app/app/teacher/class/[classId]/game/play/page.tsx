@@ -380,10 +380,10 @@ export default function GamePlayPage() {
 
   return (
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
-      <main className="flex-grow p-2 overflow-hidden">
-        <div className="max-w-7xl mx-auto h-full flex flex-col gap-2">
+      <main className="flex-grow pt-20 px-6 pb-6 overflow-hidden">
+        <div className="max-w-7xl mx-auto h-full flex flex-col gap-3">
         {/* 헤더: 네비게이션 - management 페이지 스타일 */}
-        <div className="flex gap-3 flex-shrink-0">
+        <div className="flex gap-3 flex-shrink-0 mb-6">
           <Link href="/teacher/dashboard">
             <Button
               variant="ghost"

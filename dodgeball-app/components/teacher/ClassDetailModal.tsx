@@ -9,7 +9,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { StudentCard } from '@/components/teacher/StudentCard';
 import type { Class, Student } from '@/types';
-import { X } from 'lucide-react';
 
 interface ClassDetailModalProps {
   isOpen: boolean;
@@ -44,28 +43,20 @@ export function ClassDetailModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="!max-w-[95vw] !max-h-[90vh] w-[95vw] flex flex-col">
-        <DialogHeader className="flex-shrink-0">
+        <DialogHeader className="flex-shrink-0 pr-10">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-2xl font-bold">
               {classData.name} 학생 목록
             </DialogTitle>
-            <div className="flex items-center gap-2">
-              {onRandomTeamGeneration && (
-                <Button
-                  onClick={onRandomTeamGeneration}
-                  className="bg-green-500 hover:bg-green-600 text-white font-bold"
-                  size="sm"
-                >
-                  🎲 랜덤 팀 생성 (2팀)
-                </Button>
-              )}
-              <button
-                onClick={onClose}
-                className="rounded-full p-1 hover:bg-gray-100 transition-colors"
+            {onRandomTeamGeneration && (
+              <Button
+                onClick={onRandomTeamGeneration}
+                className="bg-green-500 hover:bg-green-600 text-white font-bold"
+                size="sm"
               >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+                🎲 랜덤 팀 생성 (2팀)
+              </Button>
+            )}
           </div>
         </DialogHeader>
 
