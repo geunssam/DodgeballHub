@@ -232,7 +232,7 @@ export default function ManagementPage() {
   );
 
   return (
-    <main className="min-h-screen bg-background flex flex-col">
+    <main className="min-h-screen bg-background flex flex-col pt-16">
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow flex flex-col">
         {/* 헤더 */}
         <div className="flex justify-between items-center mb-6">

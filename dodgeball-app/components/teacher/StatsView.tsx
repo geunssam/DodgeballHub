@@ -17,7 +17,7 @@ interface StatsViewProps {
 const StatsView = ({ finishedGames, teams, students = [], onBack }: StatsViewProps) => {
   // 경기 기록만 표시
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pt-16">
       {/* 헤더 - Firebase 스타일 */}
       <div className="bg-white rounded-lg shadow-md p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
