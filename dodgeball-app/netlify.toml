@@ -1,0 +1,29 @@
+# Netlify 배포 설정 파일
+[build]
+  # 빌드 커맨드
+  command = "npm run build"
+  # 빌드 결과물이 생성되는 디렉토리
+  publish = ".next"
+  # Node.js 버전 설정
+  [build.environment]
+    NODE_VERSION = "20"
+
+# Next.js 런타임 설정
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# 리다이렉트 및 라우팅 설정
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
+
+# 헤더 설정
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
