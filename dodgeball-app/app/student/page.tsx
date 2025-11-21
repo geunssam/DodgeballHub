@@ -1,34 +1,64 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
-import { getStudentByAccessCode } from '@/lib/dataService';
+import { getStudentByAccessCode, getStudentByStudentCode } from '@/lib/dataService';
 import { StudentDashboard } from '@/components/student/StudentDashboard';
 import { Student } from '@/types';
+import { isValidStudentCode } from '@/lib/studentCodeGenerator';
 
 export default function StudentPage() {
+  const searchParams = useSearchParams();
+  const codeFromUrl = searchParams.get('code');
+
   const [code, setCode] = useState('');
   const [student, setStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // URL 파라미터로 코드가 전달된 경우 자동 로그인 시도
+  useEffect(() => {
+    if (codeFromUrl) {
+      handleSubmitWithCode(codeFromUrl);
+    }
+  }, [codeFromUrl]);
 
-    if (!code.trim()) {
+  // 코드로 학생 찾기 (studentCode 우선, 없으면 accessCode)
+  const findStudentByCode = async (inputCode: string): Promise<Student | null> => {
+    // 1. studentCode 형식(abc123-159001)인지 확인
+    if (isValidStudentCode(inputCode)) {
+      const foundStudent = await getStudentByStudentCode(inputCode);
+      if (foundStudent) return foundStudent;
+    }
+
+    // 2. 기존 accessCode로 시도
+    const foundStudent = await getStudentByAccessCode(inputCode);
+    return foundStudent;
+  };
+
+  const handleSubmitWithCode = async (inputCode: string) => {
+    if (!inputCode.trim()) {
       alert('접근 코드를 입력해주세요.');
       return;
     }
 
     setLoading(true);
     try {
-      const foundStudent = await getStudentByAccessCode(code);
+      const foundStudent = await findStudentByCode(inputCode);
       if (foundStudent) {
         setStudent(foundStudent);
+        setCode(inputCode); // 입력 필드 업데이트
       } else {
-        alert('접근 코드를 찾을 수 없습니다!\n\n💡 시크릿 모드를 사용중이라면 일반 브라우저 모드에서 접속해주세요.\n테스트용 접근 코드: 3-1-김철수');
+        alert(
+          '접근 코드를 찾을 수 없습니다!\n\n' +
+          '💡 시크릿 모드를 사용중이라면 일반 브라우저 모드에서 접속해주세요.\n\n' +
+          '지원 형식:\n' +
+          '• 신규 코드: abc123-159001\n' +
+          '• 기존 코드: 3-1-김철수'
+        );
       }
     } catch (error) {
       console.error('Failed to find student:', error);
@@ -36,6 +66,11 @@ export default function StudentPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await handleSubmitWithCode(code);
   };
 
   const handleLogout = () => {
@@ -73,9 +108,17 @@ export default function StudentPage() {
         </form>
 
         <div className="mt-6 p-4 bg-blue-50 rounded-lg text-sm">
-          <p className="font-bold text-blue-900 mb-1">💡 접근 코드 형식</p>
-          <p className="text-blue-700">반번호-출석번호-이름</p>
-          <p className="text-xs text-blue-600 mt-2">예: 3반 5번 김철수 → 3-5-김철수</p>
+          <p className="font-bold text-blue-900 mb-2">💡 접근 코드 형식</p>
+          <div className="space-y-2">
+            <div>
+              <p className="text-blue-700 font-semibold">신규 코드 (추천)</p>
+              <p className="text-xs text-blue-600">예: abc123-159001</p>
+            </div>
+            <div>
+              <p className="text-blue-700 font-semibold">기존 코드</p>
+              <p className="text-xs text-blue-600">예: 3반 5번 김철수 → 3-5-김철수</p>
+            </div>
+          </div>
         </div>
       </Card>
     </main>

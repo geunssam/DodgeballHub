@@ -229,7 +229,7 @@ export default function TeacherDashboardPage() {
       <main className={`w-full mx-auto ${dashboardView === 'dashboard'
         ? 'h-full flex items-center justify-center overflow-hidden px-6'
         : dashboardView === 'badges' || dashboardView === 'rankings'
-          ? 'h-full overflow-hidden px-6 sm:px-8 py-8 max-w-7xl'
+          ? 'h-full overflow-hidden px-6 sm:px-8 py-2 max-w-7xl'
           : 'flex-grow py-8 max-w-7xl overflow-y-auto px-6 sm:px-8'
         }`}>
         {/* 대시보드 메인 뷰 */}
@@ -636,9 +636,9 @@ export default function TeacherDashboardPage() {
 
         {/* 학급 랭킹 뷰 */}
         {dashboardView === 'rankings' && (
-          <div className="w-full max-w-full h-full flex flex-col bg-background min-h-0">
+          <div className="w-full max-w-full h-full flex flex-col bg-background min-h-0 pt-4">
             {/* 헤더 영역 (BadgeCollection 스타일) */}
-            <div className="border-b bg-card px-6 py-5 flex-shrink-0">
+            <div className="border-b bg-card px-6 py-3 flex-shrink-0">
               <div className="flex items-center justify-between">
                 {/* 좌측: 대시보드 버튼 */}
                 <button
@@ -660,7 +660,7 @@ export default function TeacherDashboardPage() {
             </div>
 
             {/* 랭킹 컨텐츠 */}
-            <div className="flex-1 overflow-y-auto px-6 py-6">
+            <div className="flex-1 overflow-y-auto px-6 pt-6 pb-0 min-h-0">
               <ClassRankingWidget onClassClick={handleClassClick} />
             </div>
           </div>

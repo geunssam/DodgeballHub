@@ -214,6 +214,55 @@ export async function getStudentByAccessCode(code: string): Promise<Student | nu
   return students.find(s => s.accessCode === code) || null;
 }
 
+/**
+ * studentCode로 학생 찾기
+ */
+export async function getStudentByStudentCode(code: string): Promise<Student | null> {
+  const students = getFromStorage<Student>(STORAGE_KEYS.STUDENTS);
+  return students.find(s => s.studentCode === code) || null;
+}
+
+/**
+ * 코드 없는 학생 필터링
+ */
+export async function getStudentsWithoutCode(teacherId: string): Promise<Student[]> {
+  const classes = await getClasses(teacherId);
+  const allStudents: Student[] = [];
+
+  for (const cls of classes) {
+    const students = await getStudents(cls.id);
+    allStudents.push(...students);
+  }
+
+  // studentCode가 없는 학생들만 필터링
+  return allStudents.filter(s => !s.studentCode);
+}
+
+/**
+ * 코드 일괄 생성
+ * @param teacherId - 교사 ID
+ * @param students - 코드를 생성할 학생 목록
+ * @param generateCodeFn - 코드 생성 함수
+ */
+export async function generateStudentCodes(
+  teacherId: string,
+  students: Student[],
+  generateCodeFn: (teacherId: string, studentId: string) => string
+): Promise<void> {
+  const allStudents = getFromStorage<Student>(STORAGE_KEYS.STUDENTS);
+
+  for (const student of students) {
+    const code = generateCodeFn(teacherId, student.id);
+    const index = allStudents.findIndex(s => s.id === student.id);
+
+    if (index !== -1) {
+      allStudents[index].studentCode = code;
+    }
+  }
+
+  saveToStorage(STORAGE_KEYS.STUDENTS, allStudents);
+}
+
 export async function createStudent(data: Omit<Student, 'id' | 'createdAt'>): Promise<Student> {
   const students = getFromStorage<Student>(STORAGE_KEYS.STUDENTS);
 

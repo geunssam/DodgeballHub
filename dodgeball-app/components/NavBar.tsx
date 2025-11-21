@@ -6,12 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Settings } from 'lucide-react';
 import { STORAGE_KEYS } from '@/lib/mockData';
 import { GameSettingsModal } from '@/components/teacher/GameSettingsModal';
+import { StudentCodeListModal } from '@/components/teacher/StudentCodeListModal';
+import { getCurrentTeacherId, getClasses, getStudents } from '@/lib/dataService';
+import { Student } from '@/types';
 
 export function NavBar() {
   const router = useRouter();
   const [showSettings, setShowSettings] = useState(false);
+  const [showStudentCodeModal, setShowStudentCodeModal] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState<Date | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [teacherId, setTeacherId] = useState<string>('');
 
   useEffect(() => {
     setIsMounted(true);
@@ -22,6 +28,43 @@ export function NavBar() {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // 모든 학급의 학생 데이터 로드
+  useEffect(() => {
+    const loadAllStudents = async () => {
+      const currentTeacherId = getCurrentTeacherId();
+      if (!currentTeacherId) return;
+
+      setTeacherId(currentTeacherId);
+
+      const classes = await getClasses(currentTeacherId);
+      const students: Student[] = [];
+
+      for (const cls of classes) {
+        const classStudents = await getStudents(cls.id);
+        students.push(...classStudents);
+      }
+
+      setAllStudents(students);
+    };
+
+    if (isMounted) {
+      loadAllStudents();
+    }
+  }, [isMounted]);
+
+  // 학생 데이터 새로고침
+  const handleRefreshStudents = async () => {
+    const classes = await getClasses(teacherId);
+    const students: Student[] = [];
+
+    for (const cls of classes) {
+      const classStudents = await getStudents(cls.id);
+      students.push(...classStudents);
+    }
+
+    setAllStudents(students);
+  };
 
   const handleLogout = () => {
     localStorage.removeItem(STORAGE_KEYS.CURRENT_TEACHER);
@@ -79,7 +122,7 @@ export function NavBar() {
             {/* 우측: 학생 코드 + 학급 랭킹 + 설정 및 로그아웃 */}
             <div className="flex items-center gap-3">
               <Button
-                onClick={() => router.push('/student')}
+                onClick={() => setShowStudentCodeModal(true)}
                 size="sm"
                 className="bg-blue-100 hover:bg-blue-200 text-blue-700 border-blue-200 text-sm lg:text-base"
               >
@@ -113,6 +156,14 @@ export function NavBar() {
       <GameSettingsModal
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
+      />
+
+      <StudentCodeListModal
+        isOpen={showStudentCodeModal}
+        onClose={() => setShowStudentCodeModal(false)}
+        students={allStudents}
+        teacherId={teacherId}
+        onRefresh={handleRefreshStudents}
       />
     </>
   );

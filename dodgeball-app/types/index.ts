@@ -42,7 +42,8 @@ export interface Student {
   name: string;
   number: number;            // 학생 번호
   classNumber: number;       // 반 번호
-  accessCode: string;        // "3-5-김철수"
+  accessCode: string;        // "3-5-김철수" (기존 시스템, 하위 호환)
+  studentCode?: string;      // "abc123-159001" (신규 코드 시스템)
   gender?: 'male' | 'female'; // 성별 (선택)
   stats: StudentStats;
   badges: Badge[];

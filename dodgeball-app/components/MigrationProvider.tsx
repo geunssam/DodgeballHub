@@ -2,13 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { migrateTeamsToTeacherBased } from '@/lib/migration';
+import { initializeMockData } from '@/lib/mockData';
 
 export function MigrationProvider({ children }: { children: React.ReactNode }) {
   const [migrationStatus, setMigrationStatus] = useState<'pending' | 'running' | 'done' | 'error'>('pending');
 
   useEffect(() => {
     const runMigrations = async () => {
-      // 이미 마이그레이션 완료됐는지 확인
+      // 1. 먼저 Mock 데이터 초기화 (없으면)
+      initializeMockData();
+
+      // 2. 이미 마이그레이션 완료됐는지 확인
       const teamsMigrated = localStorage.getItem('TEAMS_MIGRATED_TO_TEACHER_BASED');
 
       if (teamsMigrated) {
