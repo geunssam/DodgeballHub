@@ -10,12 +10,10 @@ import { TeamCard } from '@/components/teacher/TeamCard';
 import { StudentCard } from '@/components/teacher/StudentCard';
 import { ClassDetailModal } from '@/components/teacher/ClassDetailModal';
 import { TeamDetailModal } from '@/components/teacher/TeamDetailModal';
-import { getClasses, getStudents, getTeams, deleteClass, deleteTeam, updateClass, updateTeam, createTeam, getGamesByTeacherId, updateStudent } from '@/lib/dataService';
+import { getClasses, getStudents, getTeams, deleteClass, deleteTeam, updateClass, updateTeam, createTeam } from '@/lib/dataService';
 import { randomTeamAssignment, assignTeamColor } from '@/lib/teamUtils';
-import { STORAGE_KEYS } from '@/lib/mockData';
-import { Class, Student, Team, FinishedGame } from '@/types';
-import { ChevronLeft, ChevronRight, Plus, RefreshCw } from 'lucide-react';
-import { migrateStatsData, formatStatsMigrationResult, StatsMigrationResult } from '@/lib/statsMigration';
+import { Class, Student, Team } from '@/types';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { calculateClassStats, calculateTeamStats } from '@/lib/statsHelpers';
 
 export default function ManagementPage() {
@@ -39,10 +37,6 @@ export default function ManagementPage() {
   // 모달 상태
   const [isClassDetailModalOpen, setIsClassDetailModalOpen] = useState(false);
   const [selectedClassForModal, setSelectedClassForModal] = useState<Class | null>(null);
-
-  // 스탯 마이그레이션 상태
-  const [isMigratingStats, setIsMigratingStats] = useState(false);
-  const [migrationResult, setMigrationResult] = useState<StatsMigrationResult | null>(null);
 
   useEffect(() => {
     loadData();
@@ -225,60 +219,6 @@ export default function ManagementPage() {
     }
   };
 
-  // 스탯 데이터 마이그레이션 (outs → hits)
-  const handleMigrateStats = async () => {
-    if (!confirm('기존 경기 기록의 스탯 데이터를 마이그레이션하시겠습니까?\n\n이 작업은 "outs" 프로퍼티를 "hits"로 변환합니다.')) {
-      return;
-    }
-
-    setIsMigratingStats(true);
-    setMigrationResult(null);
-
-    try {
-      const teacherId = localStorage.getItem(STORAGE_KEYS.CURRENT_TEACHER);
-      if (!teacherId) {
-        alert('로그인 정보를 찾을 수 없습니다.');
-        return;
-      }
-
-      // 모든 완료된 경기 가져오기
-      const finishedGames = await getGamesByTeacherId(teacherId);
-
-      // 마이그레이션 수행
-      const { migratedGames, migratedStudents, result } = migrateStatsData(
-        finishedGames as FinishedGame[],
-        allStudents
-      );
-
-      // 마이그레이션된 데이터 저장
-      if (result.gamesUpdated > 0) {
-        localStorage.setItem(
-          `${STORAGE_KEYS.FINISHED_GAMES_PREFIX}${teacherId}`,
-          JSON.stringify(migratedGames)
-        );
-      }
-
-      if (result.studentsUpdated > 0) {
-        for (const student of migratedStudents) {
-          await updateStudent(student.id, student);
-        }
-      }
-
-      setMigrationResult(result);
-      const message = formatStatsMigrationResult(result);
-      alert(message);
-
-      // 데이터 새로고침
-      await loadData();
-
-    } catch (error) {
-      console.error('❌ 스탯 마이그레이션 실패:', error);
-      alert('스탯 마이그레이션에 실패했습니다.');
-    } finally {
-      setIsMigratingStats(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -353,26 +293,6 @@ export default function ManagementPage() {
 
           {/* 우측 액션 버튼들 */}
           <div className="flex gap-3 pr-4">
-            {/* 스탯 마이그레이션 버튼 */}
-            <Button
-              onClick={handleMigrateStats}
-              disabled={isMigratingStats}
-              size="default"
-              className="bg-orange-100 text-orange-700 hover:bg-orange-200 font-semibold disabled:opacity-50"
-            >
-              {isMigratingStats ? (
-                <>
-                  <RefreshCw className="w-5 h-5 mr-1 animate-spin" />
-                  마이그레이션 중...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="w-5 h-5 mr-1" />
-                  스탯 마이그레이션
-                </>
-              )}
-            </Button>
-
             {/* 현재 탭에 따라 추가 버튼 표시 */}
             {activeTab === 'classes' && (
               <Link href="/teacher/create-class">
