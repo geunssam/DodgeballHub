@@ -56,7 +56,7 @@ export function ClassRankingWidget({ onClassClick }: ClassRankingWidgetProps) {
               )
             : 0,
           studentCount: stats.studentCount,
-          totalOuts: stats.totalHits,
+          totalHits: stats.totalHits,
           totalPasses: stats.totalPasses,
           totalSacrifices: stats.totalSacrifices,
           totalCookies: stats.totalCookies
@@ -180,18 +180,18 @@ export function ClassRankingWidget({ onClassClick }: ClassRankingWidgetProps) {
         {/* 4열: 통계 카드 (2x2 그리드) */}
         <div className="grid grid-cols-2 gap-2">
           <div className="bg-gradient-to-br from-red-50 to-red-100 py-3 px-4 rounded-lg flex items-center justify-center gap-2">
-            <div className="text-3xl">⚾</div>
-            <div className="text-base font-semibold text-red-800">아웃</div>
-            <div className="text-xl font-bold text-red-800">{classData.totalOuts}</div>
+            <div className="text-3xl">🔥</div>
+            <div className="text-base font-semibold text-red-800">히트</div>
+            <div className="text-xl font-bold text-red-800">{classData.totalHits}</div>
           </div>
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 py-3 px-4 rounded-lg flex items-center justify-center gap-2">
-            <div className="text-3xl">🏃</div>
+            <div className="text-3xl">🤝</div>
             <div className="text-base font-semibold text-blue-800">패스</div>
             <div className="text-xl font-bold text-blue-800">{classData.totalPasses}</div>
           </div>
           <div className="bg-gradient-to-br from-purple-50 to-purple-100 py-3 px-4 rounded-lg flex items-center justify-center gap-2">
-            <div className="text-3xl">🛡️</div>
-            <div className="text-base font-semibold text-purple-800">희생</div>
+            <div className="text-3xl">👼</div>
+            <div className="text-base font-semibold text-purple-800">양보</div>
             <div className="text-xl font-bold text-purple-800">{classData.totalSacrifices}</div>
           </div>
           <div className="bg-gradient-to-br from-orange-50 to-orange-100 py-3 px-4 rounded-lg flex items-center justify-center gap-2">
@@ -240,10 +240,10 @@ export function ClassRankingWidget({ onClassClick }: ClassRankingWidgetProps) {
                   </span>
 
                   {/* 팀명 + 인원 */}
-                  <div className="flex items-center gap-3 min-w-[12rem]">
-                    <span className="text-xl font-bold">{classData.className}</span>
-                    <span className="text-base text-gray-600 font-semibold flex items-center gap-1">
-                      <span className="text-lg">👥</span>
+                  <div className="flex items-center gap-3 min-w-[10rem]">
+                    <span className="text-lg font-bold">{classData.className}</span>
+                    <span className="text-sm text-gray-600 font-semibold flex items-center gap-1">
+                      <span className="text-base">👥</span>
                       <span>{classData.studentCount}명</span>
                     </span>
                   </div>
@@ -253,24 +253,24 @@ export function ClassRankingWidget({ onClassClick }: ClassRankingWidgetProps) {
 
                   {/* 스탯 */}
                   <div className="flex items-center gap-3 flex-1">
-                    <div className="bg-gradient-to-br from-red-50 to-red-100 py-4 px-6 rounded-xl flex items-center justify-center gap-2.5 flex-1">
-                      <div className="text-3xl">⚾</div>
-                      <div className="text-lg font-semibold text-red-800">아웃</div>
-                      <div className="text-2xl font-bold text-red-800">{classData.totalOuts || 0}</div>
+                    <div className="bg-gradient-to-br from-red-50 to-red-100 py-3 px-5 rounded-xl flex items-center justify-center gap-2 flex-1">
+                      <div className="text-3xl">🔥</div>
+                      <div className="text-base font-semibold text-red-800 whitespace-nowrap">히트</div>
+                      <div className="text-2xl font-bold text-red-800">{classData.totalHits || 0}</div>
                     </div>
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 py-4 px-6 rounded-xl flex items-center justify-center gap-2.5 flex-1">
-                      <div className="text-3xl">🏃</div>
-                      <div className="text-lg font-semibold text-blue-800">패스</div>
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 py-3 px-5 rounded-xl flex items-center justify-center gap-2 flex-1">
+                      <div className="text-3xl">🤝</div>
+                      <div className="text-base font-semibold text-blue-800 whitespace-nowrap">패스</div>
                       <div className="text-2xl font-bold text-blue-800">{classData.totalPasses || 0}</div>
                     </div>
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 py-4 px-6 rounded-xl flex items-center justify-center gap-2.5 flex-1">
-                      <div className="text-3xl">🛡️</div>
-                      <div className="text-lg font-semibold text-purple-800">희생</div>
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 py-3 px-5 rounded-xl flex items-center justify-center gap-2 flex-1">
+                      <div className="text-3xl">👼</div>
+                      <div className="text-base font-semibold text-purple-800 whitespace-nowrap">양보</div>
                       <div className="text-2xl font-bold text-purple-800">{classData.totalSacrifices || 0}</div>
                     </div>
-                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 py-4 px-6 rounded-xl flex items-center justify-center gap-2.5 flex-1">
+                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 py-3 px-5 rounded-xl flex items-center justify-center gap-2 flex-1">
                       <div className="text-3xl">🍪</div>
-                      <div className="text-lg font-semibold text-orange-800">쿠키</div>
+                      <div className="text-base font-semibold text-orange-800 whitespace-nowrap">쿠키</div>
                       <div className="text-2xl font-bold text-orange-800">{classData.totalCookies || 0}</div>
                     </div>
                   </div>
@@ -279,11 +279,11 @@ export function ClassRankingWidget({ onClassClick }: ClassRankingWidgetProps) {
                   <div className="h-8 w-px bg-gray-300"></div>
 
                   {/* 총점 */}
-                  <div className="min-w-[8rem] text-right flex items-center justify-end gap-1">
-                    <span className="text-2xl font-black text-blue-600">
+                  <div className="min-w-[6rem] text-right flex items-center justify-end gap-1">
+                    <span className="text-xl font-black text-blue-600">
                       {classData.totalPoints.toLocaleString()}
                     </span>
-                    <span className="text-lg font-bold text-gray-600">점</span>
+                    <span className="text-base font-bold text-gray-600">점</span>
                   </div>
                 </button>
               );

@@ -138,15 +138,15 @@ export function ClassDetailRankingModal({
                   <div className="text-2xl font-bold text-blue-600">{classData.studentCount}명</div>
                 </div>
                 <div>
-                  <div className="text-sm text-gray-600 mb-1">총 아웃</div>
-                  <div className="text-2xl font-bold text-red-600">{classData.totalOuts}</div>
+                  <div className="text-sm text-gray-600 mb-1">총 히트</div>
+                  <div className="text-2xl font-bold text-red-600">{classData.totalHits}</div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-600 mb-1">총 패스</div>
                   <div className="text-2xl font-bold text-blue-600">{classData.totalPasses}</div>
                 </div>
                 <div>
-                  <div className="text-sm text-gray-600 mb-1">총 희생</div>
+                  <div className="text-sm text-gray-600 mb-1">총 양보</div>
                   <div className="text-2xl font-bold text-purple-600">{classData.totalSacrifices}</div>
                 </div>
                 <div>
@@ -165,9 +165,9 @@ export function ClassDetailRankingModal({
                     <th className="p-3 text-left text-base font-bold">번호</th>
                     <th className="p-3 text-left text-base font-bold">이름</th>
                     <th className="p-3 text-center text-base font-bold">총점</th>
-                    <th className="p-3 text-center text-base font-bold">⚾ 아웃</th>
-                    <th className="p-3 text-center text-base font-bold">🏃 패스</th>
-                    <th className="p-3 text-center text-base font-bold">🛡️ 희생</th>
+                    <th className="p-3 text-center text-base font-bold">🔥 히트</th>
+                    <th className="p-3 text-center text-base font-bold">🤝 패스</th>
+                    <th className="p-3 text-center text-base font-bold">👼 양보</th>
                     <th className="p-3 text-center text-base font-bold">🍪 쿠키</th>
                     <th className="p-3 text-center text-base font-bold">🏆 배지</th>
                   </tr>

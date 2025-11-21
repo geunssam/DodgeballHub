@@ -7,7 +7,7 @@ interface TeamLineupTableProps {
   team: GameTeam;
   students: Student[];
   gameRecords: GameRecord[];
-  onStatUpdate: (studentId: string, stat: 'outs' | 'passes' | 'sacrifices' | 'cookies', delta: number) => void;
+  onStatUpdate: (studentId: string, stat: 'hits' | 'passes' | 'sacrifices' | 'cookies', delta: number) => void;
   onLifeUpdate: (studentId: string, delta: number) => void;
 }
 
@@ -25,7 +25,7 @@ export function TeamLineupTable({ team, students, gameRecords, onStatUpdate, onL
     textColor
   }: {
     studentId: string;
-    stat: 'outs' | 'passes' | 'sacrifices' | 'cookies';
+    stat: 'hits' | 'passes' | 'sacrifices' | 'cookies';
     value: number;
     bgColor: string;
     hoverColor: string;
@@ -186,7 +186,7 @@ export function TeamLineupTable({ team, students, gameRecords, onStatUpdate, onL
               <th className="py-2 text-center text-black font-bold text-xl whitespace-nowrap">이름</th>
               <th className="py-2 text-center text-black font-bold text-xl whitespace-nowrap"></th>
               <th className="py-2 text-center text-black font-bold text-xl whitespace-nowrap">하트 ❤️</th>
-              <th className="py-2 text-center text-black font-bold text-xl whitespace-nowrap">아웃 🔥</th>
+              <th className="py-2 text-center text-black font-bold text-xl whitespace-nowrap">히트 🔥</th>
               <th className="py-2 text-center text-black font-bold text-xl whitespace-nowrap">패스 🤝</th>
               <th className="py-2 text-center text-black font-bold text-xl whitespace-nowrap">양보 👼</th>
               <th className="py-2 text-center text-black font-bold text-xl whitespace-nowrap">쿠키 🍪</th>
@@ -220,8 +220,8 @@ export function TeamLineupTable({ team, students, gameRecords, onStatUpdate, onL
                   <td className="text-center align-middle">
                     <StatButton
                       studentId={member.studentId}
-                      stat="outs"
-                      value={record.outs}
+                      stat="hits"
+                      value={record.hits}
                       bgColor="bg-green-100"
                       hoverColor="hover:bg-green-200"
                       textColor="text-green-800"

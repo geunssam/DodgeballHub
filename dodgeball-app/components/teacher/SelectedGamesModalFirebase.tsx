@@ -198,16 +198,16 @@ export function SelectedGamesModalFirebase({
                         <div className="text-2xl text-red-800 font-bold">아웃</div>
                         <div className="text-5xl font-black text-red-900">{mvp.outs}</div>
                       </div>
-                      {/* 통과 카드 */}
+                      {/* 패스 카드 */}
                       <div className="bg-blue-100 rounded-xl p-6 shadow-xl flex flex-col items-center gap-3">
-                        <div className="text-5xl">🏃</div>
-                        <div className="text-2xl text-blue-800 font-bold">통과</div>
+                        <div className="text-5xl">🤝</div>
+                        <div className="text-2xl text-blue-800 font-bold">패스</div>
                         <div className="text-5xl font-black text-blue-900">{mvp.passes}</div>
                       </div>
-                      {/* 희생 카드 */}
+                      {/* 양보 카드 */}
                       <div className="bg-purple-100 rounded-xl p-6 shadow-xl flex flex-col items-center gap-3">
-                        <div className="text-5xl">🛡️</div>
-                        <div className="text-2xl text-purple-800 font-bold">희생</div>
+                        <div className="text-5xl">👼</div>
+                        <div className="text-2xl text-purple-800 font-bold">양보</div>
                         <div className="text-5xl font-black text-purple-900">{mvp.sacrifices}</div>
                       </div>
                       {/* 쿠키 카드 */}
@@ -255,9 +255,9 @@ export function SelectedGamesModalFirebase({
                       <th className="border-2 border-gray-300 p-5">학급</th>
                       <th className="border-2 border-gray-300 p-5">팀</th>
                       <th className="border-2 border-gray-300 p-5">출전</th>
-                      <th className="border-2 border-gray-300 p-5">🎯 아웃</th>
-                      <th className="border-2 border-gray-300 p-5">🏃 통과</th>
-                      <th className="border-2 border-gray-300 p-5">🛡️ 희생</th>
+                      <th className="border-2 border-gray-300 p-5">🔥 히트</th>
+                      <th className="border-2 border-gray-300 p-5">🤝 패스</th>
+                      <th className="border-2 border-gray-300 p-5">👼 양보</th>
                       <th className="border-2 border-gray-300 p-5">🍪 쿠키</th>
                       <th className="border-2 border-gray-300 p-5 bg-yellow-500">총점</th>
                     </tr>

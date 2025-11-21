@@ -107,7 +107,7 @@ export function PlayerRow({
             <span>{STAT_ICONS.passes}</span>
             <span className="text-sm font-medium">{stats.passes}</span>
           </div>
-          <div className="flex items-center gap-1" title="희생">
+          <div className="flex items-center gap-1" title="양보">
             <span>{STAT_ICONS.sacrifices}</span>
             <span className="text-sm font-medium">{stats.sacrifices}</span>
           </div>

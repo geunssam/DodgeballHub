@@ -113,7 +113,7 @@ export default function GamePlayPage() {
   // 스탯 업데이트 핸들러 (라인업 테이블에서)
   const handleStatUpdate = async (
     studentId: string,
-    stat: 'outs' | 'passes' | 'sacrifices' | 'cookies',
+    stat: 'hits' | 'passes' | 'sacrifices' | 'cookies',
     delta: number
   ) => {
     console.log('📊 handleStatUpdate called:', studentId, stat, delta);
@@ -141,7 +141,7 @@ export default function GamePlayPage() {
 
     // 누적 스탯 계산 (기존 스탯 + 이번 경기 스탯)
     const projectedStats = {
-      hits: student.stats.hits + updatedRecord.outs,
+      hits: student.stats.hits + updatedRecord.hits,
       passes: student.stats.passes + updatedRecord.passes,
       sacrifices: student.stats.sacrifices + updatedRecord.sacrifices,
       cookies: student.stats.cookies + updatedRecord.cookies,
