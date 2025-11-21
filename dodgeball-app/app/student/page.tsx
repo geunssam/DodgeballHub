@@ -28,7 +28,7 @@ export default function StudentPage() {
       if (foundStudent) {
         setStudent(foundStudent);
       } else {
-        alert('접근 코드를 찾을 수 없습니다!');
+        alert('접근 코드를 찾을 수 없습니다!\n\n💡 시크릿 모드를 사용중이라면 일반 브라우저 모드에서 접속해주세요.\n테스트용 접근 코드: 3-1-김철수');
       }
     } catch (error) {
       console.error('Failed to find student:', error);
@@ -44,17 +44,7 @@ export default function StudentPage() {
   };
 
   if (student) {
-    return (
-      <main className="min-h-screen bg-gray-50">
-        <div className="p-4 bg-white shadow-sm flex justify-between items-center">
-          <h1 className="text-xl font-bold">🏐 DodgeballHub</h1>
-          <Button variant="outline" onClick={handleLogout}>
-            로그아웃
-          </Button>
-        </div>
-        <StudentDashboard student={student} />
-      </main>
-    );
+    return <StudentDashboard student={student} onLogout={handleLogout} />;
   }
 
   return (

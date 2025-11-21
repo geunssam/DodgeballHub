@@ -112,20 +112,20 @@ export function PlayerBadgeDisplay({
     switch (size) {
       case 'sm':
         return {
-          container: 'gap-1',
-          badge: 'w-6 h-6 text-sm',
+          container: 'gap-0.5',
+          badge: 'text-xs',
           more: 'text-xs px-1.5 py-0.5',
         };
       case 'md':
         return {
-          container: 'gap-1.5',
-          badge: 'w-8 h-8 text-base',
+          container: 'gap-1',
+          badge: 'text-sm',
           more: 'text-xs px-2 py-1',
         };
       case 'lg':
         return {
-          container: 'gap-2',
-          badge: 'w-10 h-10 text-lg',
+          container: 'gap-1.5',
+          badge: 'text-base',
           more: 'text-sm px-2.5 py-1',
         };
     }
@@ -155,10 +155,9 @@ export function PlayerBadgeDisplay({
               key={`${badge.id}-${index}`}
               ref={el => badgeRefs.current[badge.id] = el}
               className={cn(
-                'rounded-full border flex items-center justify-center transition-all',
-                'hover:scale-110 hover:shadow-sm cursor-pointer',
-                sizeClasses.badge,
-                getTierColor(badgeInfo.tier)
+                'inline-block transition-all',
+                'hover:scale-125 cursor-pointer',
+                sizeClasses.badge
               )}
               role="img"
               aria-label={badgeInfo.name}
@@ -310,17 +309,33 @@ const BadgeTooltip: React.FC<BadgeTooltipProps> = ({
 
   // 오버플로우 배지 툴팁
   if (type === 'overflow') {
+    // 툴팁의 최대 높이를 화면 높이의 60%로 제한
+    const maxHeight = typeof window !== 'undefined' ? window.innerHeight * 0.6 : 400;
+
+    // 툴팁이 화면 위로 나가지 않도록 위치 조정
+    const tooltipTop = rect.top - 10;
+    const spaceAbove = rect.top;
+    const spaceBelow = typeof window !== 'undefined' ? window.innerHeight - rect.bottom : 500;
+
+    // 위쪽 공간이 충분한지 확인 (최소 150px + 툴팁 예상 높이)
+    const estimatedTooltipHeight = Math.min(maxHeight, (overflowBadges.length * 40) + 80);
+    const shouldFlipToBottom = spaceAbove < estimatedTooltipHeight || spaceAbove < 150;
+
     return (
       <div
         className="fixed px-3 py-2 bg-gray-900 text-white rounded-lg shadow-lg min-w-[240px] pointer-events-none z-[9999]"
         style={{
           left: `${rect.left + rect.width / 2}px`,
-          top: `${rect.top - 10}px`,
-          transform: 'translate(-50%, -100%)',
+          top: shouldFlipToBottom ? `${rect.bottom + 10}px` : `${tooltipTop}px`,
+          transform: shouldFlipToBottom ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
+          maxHeight: `${maxHeight}px`,
         }}
       >
         <p className="font-bold text-sm mb-2">추가 배지 ({badges.length - maxDisplay}개)</p>
-        <div className="space-y-2 max-h-[200px] overflow-y-auto">
+        <div
+          className="space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800"
+          style={{ maxHeight: `${maxHeight - 60}px` }}
+        >
           {overflowBadges.map((badge, idx) => {
             const badgeInfo = getBadgeInfo(badge);
             return (
@@ -339,8 +354,10 @@ const BadgeTooltip: React.FC<BadgeTooltipProps> = ({
           className="absolute w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"
           style={{
             left: '50%',
-            bottom: '-4px',
-            transform: 'translateX(-50%) rotate(180deg)',
+            ...(shouldFlipToBottom
+              ? { top: '-4px', transform: 'translateX(-50%)' }
+              : { bottom: '-4px', transform: 'translateX(-50%) rotate(180deg)' }
+            ),
           }}
         />
       </div>

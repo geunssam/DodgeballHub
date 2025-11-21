@@ -286,3 +286,109 @@ export async function checkAndAwardBadges(
     updatedStudent
   };
 }
+
+/**
+ * 학생의 현재 누적 통계를 기반으로 배지를 재계산하고 수여 (소급 적용)
+ * 기존 학생들의 배지를 일괄 업데이트할 때 사용
+ *
+ * @param student - 학생 데이터
+ * @returns 수여된 배지 배열과 업데이트된 학생 객체
+ */
+export async function recalculateAndAwardBadges(
+  student: Student
+): Promise<{
+  awardedBadges: Badge[];
+  updatedStudent: Student;
+}> {
+  const awardedBadges: Badge[] = [];
+
+  // 현재 누적 통계 사용
+  const currentStats: StudentStats = student.stats;
+
+  // 현재 보유한 배지 ID 목록
+  const ownedBadgeIds = student.badges.map((b) => b.id);
+
+  console.log(`🔍 [recalculateAndAwardBadges] ${student.name} 배지 재계산 시작`);
+  console.log(`   현재 스탯:`, currentStats);
+  console.log(`   보유 배지 (${ownedBadgeIds.length}개):`, ownedBadgeIds);
+
+  // 모든 배지 체크
+  for (const badge of Object.values(BADGES)) {
+    // 이미 보유한 배지는 스킵
+    if (ownedBadgeIds.includes(badge.id)) {
+      continue;
+    }
+
+    // 조건 체크
+    if (badge.condition(currentStats)) {
+      const newBadge: Badge = {
+        id: badge.id,
+        name: badge.name,
+        emoji: badge.icon,
+        tier: badge.tier,
+        awardedAt: new Date().toISOString(),
+        isAuto: true,
+        reason: `${badge.description} (소급 적용)`
+      };
+
+      awardedBadges.push(newBadge);
+      console.log(`   ✅ 새 배지 발견: ${badge.name}`);
+    }
+  }
+
+  console.log(`   총 ${awardedBadges.length}개 배지 수여`);
+
+  // 학생 객체 업데이트 (배지 추가)
+  const updatedStudent: Student = {
+    ...student,
+    badges: [...student.badges, ...awardedBadges]
+  };
+
+  // 데이터베이스에 저장
+  if (awardedBadges.length > 0) {
+    await updateStudent(student.id, {
+      badges: updatedStudent.badges
+    });
+    console.log(`   💾 ${student.name} 배지 저장 완료`);
+  }
+
+  return {
+    awardedBadges,
+    updatedStudent
+  };
+}
+
+/**
+ * 모든 학생의 배지를 재계산하고 수여 (일괄 소급 적용)
+ *
+ * @param students - 학생 배열
+ * @returns 총 수여된 배지 개수와 업데이트된 학생 수
+ */
+export async function recalculateAllStudentBadges(
+  students: Student[]
+): Promise<{
+  totalBadgesAwarded: number;
+  studentsUpdated: number;
+}> {
+  let totalBadgesAwarded = 0;
+  let studentsUpdated = 0;
+
+  console.log(`🚀 [recalculateAllStudentBadges] ${students.length}명 학생 배지 재계산 시작`);
+
+  for (const student of students) {
+    const { awardedBadges } = await recalculateAndAwardBadges(student);
+
+    if (awardedBadges.length > 0) {
+      totalBadgesAwarded += awardedBadges.length;
+      studentsUpdated++;
+    }
+  }
+
+  console.log(`✅ [recalculateAllStudentBadges] 완료!`);
+  console.log(`   총 ${studentsUpdated}명 학생에게 ${totalBadgesAwarded}개 배지 수여`);
+
+  return {
+    totalBadgesAwarded,
+    studentsUpdated
+  };
+}

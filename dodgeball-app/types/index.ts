@@ -32,6 +32,7 @@ export interface Badge {
   emoji: string;
   awardedAt: string;         // ISO 8601
   isAuto: boolean;
+  tier?: number;             // 배지 티어 (1-5)
   reason?: string;
 }
 

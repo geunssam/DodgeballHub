@@ -235,22 +235,22 @@ export function SelectedGamesModal({
 
                     {/* 셋째 줄: 경기 스탯 카드 */}
                     <div className="grid grid-cols-5 gap-4">
-                      {/* 아웃 카드 */}
+                      {/* 적중 카드 */}
                       <div className="bg-red-100 rounded-xl p-4 shadow-lg flex items-center justify-between gap-2">
-                        <div className="text-3xl">⚾</div>
-                        <div className="text-xl text-red-800 font-bold">아웃</div>
-                        <div className="text-3xl font-black text-red-900">{mvp.outs}</div>
+                        <div className="text-3xl">🎯</div>
+                        <div className="text-xl text-red-800 font-bold">적중</div>
+                        <div className="text-3xl font-black text-red-900">{mvp.hits}</div>
                       </div>
-                      {/* 통과 카드 */}
+                      {/* 패스 카드 */}
                       <div className="bg-blue-100 rounded-xl p-4 shadow-lg flex items-center justify-between gap-2">
-                        <div className="text-3xl">🏃</div>
-                        <div className="text-xl text-blue-800 font-bold">통과</div>
+                        <div className="text-3xl">✋</div>
+                        <div className="text-xl text-blue-800 font-bold">패스</div>
                         <div className="text-3xl font-black text-blue-900">{mvp.passes}</div>
                       </div>
-                      {/* 희생 카드 */}
+                      {/* 양보 카드 */}
                       <div className="bg-purple-100 rounded-xl p-4 shadow-lg flex items-center justify-between gap-2">
-                        <div className="text-3xl">🛡️</div>
-                        <div className="text-xl text-purple-800 font-bold">희생</div>
+                        <div className="text-3xl">❤️</div>
+                        <div className="text-xl text-purple-800 font-bold">양보</div>
                         <div className="text-3xl font-black text-purple-900">{mvp.sacrifices}</div>
                       </div>
                       {/* 쿠키 카드 */}
@@ -299,9 +299,9 @@ export function SelectedGamesModal({
                       <th className="border-2 border-gray-300 p-4">학급</th>
                       <th className="border-2 border-gray-300 p-4">팀</th>
                       <th className="border-2 border-gray-300 p-4">출전</th>
-                      <th className="border-2 border-gray-300 p-4">⚾ 아웃</th>
-                      <th className="border-2 border-gray-300 p-4">🏃 통과</th>
-                      <th className="border-2 border-gray-300 p-4">🛡️ 희생</th>
+                      <th className="border-2 border-gray-300 p-4">🎯 적중</th>
+                      <th className="border-2 border-gray-300 p-4">✋ 패스</th>
+                      <th className="border-2 border-gray-300 p-4">❤️ 양보</th>
                       <th className="border-2 border-gray-300 p-4">🍪 쿠키</th>
                       <th className="border-2 border-gray-300 p-4 bg-yellow-500">총점</th>
                     </tr>
@@ -543,13 +543,13 @@ export function SelectedGamesModal({
                                       이름
                                     </th>
                                     <th className="border-2 border-gray-300 p-3 text-center text-gray-900">
-                                      ⚾ 아웃
+                                      🎯 적중
                                     </th>
                                     <th className="border-2 border-gray-300 p-3 text-center text-gray-900">
-                                      🏃 통과
+                                      ✋ 패스
                                     </th>
                                     <th className="border-2 border-gray-300 p-3 text-center text-gray-900">
-                                      🛡️ 희생
+                                      ❤️ 양보
                                     </th>
                                     <th className="border-2 border-gray-300 p-3 text-center text-gray-900">
                                       🍪 쿠키

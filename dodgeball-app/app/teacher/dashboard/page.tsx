@@ -5,16 +5,17 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getClasses, deleteClass, getGamesByTeacherId, deleteGame, getStudents, updateClass, getTeams } from '@/lib/dataService';
+import { getClasses, deleteClass, getGamesByTeacherId, deleteGame, getStudents, updateClass, getTeams, updateStudent } from '@/lib/dataService';
 import { STORAGE_KEYS } from '@/lib/mockData';
 import { Class, Game, Student, Team, FinishedGame } from '@/types';
 import { ClassCard } from '@/components/teacher/ClassCard';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { GameModeSelectModal } from '@/components/teacher/GameModeSelectModal';
 import { QuickGameModal } from '@/components/teacher/QuickGameModal';
 import { SelectedGamesModal } from '@/components/teacher/SelectedGamesModal';
 import StatsView from '@/components/teacher/StatsView';
 import BadgeCollection from '@/components/badge/BadgeCollection';
+import { migrateBadges, formatMigrationResult, type MigrationResult } from '@/lib/badgeMigration';
 
 export default function TeacherDashboardPage() {
   const router = useRouter();
@@ -40,6 +41,10 @@ export default function TeacherDashboardPage() {
   // 페이지네이션 상태
   const [classesPage, setClassesPage] = useState(0);
   const classesPerPage = 4;
+
+  // 마이그레이션 상태
+  const [isMigrating, setIsMigrating] = useState(false);
+  const [migrationResult, setMigrationResult] = useState<MigrationResult | null>(null);
 
   useEffect(() => {
     // 로그인 체크
@@ -183,6 +188,51 @@ export default function TeacherDashboardPage() {
     }
   };
 
+  const handleMigrateBadges = async () => {
+    if (!confirm(
+      '배지 마이그레이션을 시작하시겠습니까?\n\n' +
+      '모든 학생의 현재 스탯을 기반으로 배지를 재계산하여 누락된 배지를 자동으로 수여합니다.\n\n' +
+      '⚠️ 이 작업은 몇 초가 걸릴 수 있습니다.'
+    )) {
+      return;
+    }
+
+    setIsMigrating(true);
+    setMigrationResult(null);
+
+    try {
+      // 모든 학생 데이터 복사 (원본 보존)
+      const studentsToMigrate = [...allStudents];
+
+      // 마이그레이션 실행
+      const result = migrateBadges(studentsToMigrate);
+
+      // 변경된 학생 데이터 저장
+      await Promise.all(
+        studentsToMigrate.map(student => updateStudent(student.id, student))
+      );
+
+      // 학생 데이터 다시 로드
+      const teacherId = localStorage.getItem(STORAGE_KEYS.CURRENT_TEACHER);
+      if (teacherId) {
+        await loadClasses(teacherId);
+      }
+
+      setMigrationResult(result);
+
+      // 결과 표시
+      alert(
+        '✅ 배지 마이그레이션 완료!\n\n' +
+        formatMigrationResult(result)
+      );
+    } catch (error) {
+      console.error('Migration failed:', error);
+      alert('⚠️ 배지 마이그레이션 중 오류가 발생했습니다.\n\n' + (error instanceof Error ? error.message : '알 수 없는 오류'));
+    } finally {
+      setIsMigrating(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -205,6 +255,20 @@ export default function TeacherDashboardPage() {
         {/* 대시보드 메인 뷰 */}
         {dashboardView === 'dashboard' && (
           <div className="w-full max-w-5xl pt-35 pb-5">
+            {/* 마이그레이션 버튼 - 상단 우측 */}
+            <div className="flex justify-end mb-4">
+              <Button
+                onClick={handleMigrateBadges}
+                disabled={isMigrating || allStudents.length === 0}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2 bg-gradient-to-r from-amber-50 to-yellow-50 hover:from-amber-100 hover:to-yellow-100 text-amber-700 border-amber-200 shadow-sm"
+              >
+                <RefreshCw className={`w-4 h-4 ${isMigrating ? 'animate-spin' : ''}`} />
+                <span>{isMigrating ? '배지 재계산 중...' : '🏆 배지 재계산'}</span>
+              </Button>
+            </div>
+
             <div className="grid grid-cols-2 gap-6 tablet:gap-7 tablet-lg:gap-8 w-full">
               {/* 학급/팀 관리 카드 */}
               <Card
@@ -229,6 +293,9 @@ export default function TeacherDashboardPage() {
                   <div className="flex flex-wrap gap-2 justify-center">
                     <span className="px-3 py-1.5 bg-blue-100/80 rounded-lg font-semibold text-blue-800 text-sm tablet:text-base whitespace-nowrap">
                       {classes.length}개 학급
+                    </span>
+                    <span className="px-3 py-1.5 bg-amber-100/80 rounded-lg font-semibold text-amber-800 text-sm tablet:text-base whitespace-nowrap">
+                      🏆 {allStudents.reduce((sum, s) => sum + (s.badges?.length || 0), 0)}개 배지
                     </span>
                   </div>
                 </CardContent>

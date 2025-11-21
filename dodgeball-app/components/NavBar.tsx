@@ -76,8 +76,15 @@ export function NavBar() {
               </div>
             </div>
 
-            {/* 우측: 설정 및 로그아웃 */}
+            {/* 우측: 학생 코드 + 설정 및 로그아웃 */}
             <div className="flex items-center gap-3">
+              <Button
+                onClick={() => router.push('/student')}
+                size="sm"
+                className="bg-blue-100 hover:bg-blue-200 text-blue-700 border-blue-200 text-sm lg:text-base"
+              >
+                📋 학생코드
+              </Button>
               <p className="text-sm font-semibold text-gray-900 hidden md:block">김교사 선생님</p>
               <Button
                 onClick={() => setShowSettings(true)}

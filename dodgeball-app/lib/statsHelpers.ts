@@ -178,13 +178,14 @@ export function calculateTeamStats(
 
 /**
  * 통계 아이콘과 값을 반환하는 헬퍼
+ * 피구(Dodgeball) 용어 사용
  */
 export const STAT_ICONS = {
-  hits: '⚾',
-  passes: '🏃',
-  sacrifices: '🛡️',
-  cookies: '🍪',
-  badges: '🏆',
+  hits: '🎯',      // 적중 (상대를 맞춤)
+  passes: '✋',     // 패스 (공을 넘김)
+  sacrifices: '❤️', // 양보 (아웃된 동료 살리기)
+  cookies: '🍪',   // 쿠키 (보너스)
+  badges: '🏆',    // 배지
 } as const;
 
 /**
@@ -200,17 +201,17 @@ export function formatStatsWithIcons(
     {
       icon: STAT_ICONS.hits,
       value: 'totalHits' in stats ? stats.totalHits : stats.hits,
-      label: '아웃',
+      label: '적중',
     },
     {
       icon: STAT_ICONS.passes,
       value: 'totalPasses' in stats ? stats.totalPasses : stats.passes,
-      label: '통과',
+      label: '패스',
     },
     {
       icon: STAT_ICONS.sacrifices,
       value: 'totalSacrifices' in stats ? stats.totalSacrifices : stats.sacrifices,
-      label: '희생',
+      label: '양보',
     },
     {
       icon: STAT_ICONS.cookies,
@@ -232,7 +233,7 @@ export function formatStatsWithIcons(
  * 통합 분석 모달에서 사용
  */
 export function calculatePlayerPoints(stats: {
-  outs?: number;
+  hits?: number;
   passes?: number;
   sacrifices?: number;
   cookies?: number;

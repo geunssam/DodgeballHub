@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { StudentCard } from '@/components/teacher/StudentCard';
+import { calculateClassStats } from '@/lib/statsHelpers';
 import type { Class, Student } from '@/types';
 
 interface ClassDetailModalProps {
@@ -32,13 +33,9 @@ export function ClassDetailModal({
 }: ClassDetailModalProps) {
   if (!classData) return null;
 
-  // 통계 계산
-  const totalOuts = students.reduce((sum, s) => sum + (s.outs || 0), 0);
-  const totalPasses = students.reduce((sum, s) => sum + (s.passes || 0), 0);
-  const totalSacrifices = students.reduce((sum, s) => sum + (s.sacrifices || 0), 0);
-  const totalCookies = students.reduce((sum, s) => sum + (s.cookies || 0), 0);
-  const totalScore = totalOuts + totalPasses + totalSacrifices + totalCookies;
-  const totalBadges = students.reduce((sum, s) => sum + (s.badges?.length || 0), 0);
+  // 통계 계산 - statsHelpers 사용
+  const classStats = calculateClassStats(students);
+  const totalScore = classStats.totalHits + classStats.totalPasses + classStats.totalSacrifices + classStats.totalCookies;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -77,19 +74,19 @@ export function ClassDetailModal({
           <div className="flex items-center justify-center gap-6 py-3 bg-blue-50 rounded-lg">
             <div className="flex items-center gap-2">
               <span className="text-lg">🎯</span>
-              <span className="font-bold">{totalOuts}</span>
+              <span className="font-bold">{classStats.totalHits}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-lg">✋</span>
-              <span className="font-bold">{totalPasses}</span>
+              <span className="font-bold">{classStats.totalPasses}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-lg">❤️</span>
-              <span className="font-bold">{totalSacrifices}</span>
+              <span className="font-bold">{classStats.totalSacrifices}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-lg">🍪</span>
-              <span className="font-bold">{totalCookies}</span>
+              <span className="font-bold">{classStats.totalCookies}</span>
             </div>
             <div className="flex items-center gap-2 ml-4 pl-4 border-l-2 border-blue-300">
               <span className="text-lg">📊</span>
@@ -100,7 +97,7 @@ export function ClassDetailModal({
             <div className="flex items-center gap-2">
               <span className="text-lg">🏆</span>
               <span className="font-bold text-yellow-600">
-                배지: {totalBadges}개
+                배지: {classStats.totalBadges}개
               </span>
             </div>
           </div>

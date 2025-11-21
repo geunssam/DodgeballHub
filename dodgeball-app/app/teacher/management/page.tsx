@@ -9,11 +9,14 @@ import { ClassCard } from '@/components/teacher/ClassCard';
 import { TeamCard } from '@/components/teacher/TeamCard';
 import { StudentCard } from '@/components/teacher/StudentCard';
 import { ClassDetailModal } from '@/components/teacher/ClassDetailModal';
-import { getClasses, getStudents, getTeams, deleteClass, deleteTeam, updateClass, updateTeam, createTeam } from '@/lib/dataService';
+import { TeamDetailModal } from '@/components/teacher/TeamDetailModal';
+import { getClasses, getStudents, getTeams, deleteClass, deleteTeam, updateClass, updateTeam, createTeam, getGamesByTeacherId, updateStudent } from '@/lib/dataService';
 import { randomTeamAssignment, assignTeamColor } from '@/lib/teamUtils';
 import { STORAGE_KEYS } from '@/lib/mockData';
-import { Class, Student, Team } from '@/types';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { Class, Student, Team, FinishedGame } from '@/types';
+import { ChevronLeft, ChevronRight, Plus, RefreshCw } from 'lucide-react';
+import { migrateStatsData, formatStatsMigrationResult, StatsMigrationResult } from '@/lib/statsMigration';
+import { calculateClassStats, calculateTeamStats } from '@/lib/statsHelpers';
 
 export default function ManagementPage() {
   const router = useRouter();
@@ -31,11 +34,15 @@ export default function ManagementPage() {
 
   // 선택된 학급/팀
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
-  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
 
   // 모달 상태
   const [isClassDetailModalOpen, setIsClassDetailModalOpen] = useState(false);
   const [selectedClassForModal, setSelectedClassForModal] = useState<Class | null>(null);
+
+  // 스탯 마이그레이션 상태
+  const [isMigratingStats, setIsMigratingStats] = useState(false);
+  const [migrationResult, setMigrationResult] = useState<StatsMigrationResult | null>(null);
 
   useEffect(() => {
     loadData();
@@ -218,6 +225,60 @@ export default function ManagementPage() {
     }
   };
 
+  // 스탯 데이터 마이그레이션 (outs → hits)
+  const handleMigrateStats = async () => {
+    if (!confirm('기존 경기 기록의 스탯 데이터를 마이그레이션하시겠습니까?\n\n이 작업은 "outs" 프로퍼티를 "hits"로 변환합니다.')) {
+      return;
+    }
+
+    setIsMigratingStats(true);
+    setMigrationResult(null);
+
+    try {
+      const teacherId = localStorage.getItem(STORAGE_KEYS.CURRENT_TEACHER);
+      if (!teacherId) {
+        alert('로그인 정보를 찾을 수 없습니다.');
+        return;
+      }
+
+      // 모든 완료된 경기 가져오기
+      const finishedGames = await getGamesByTeacherId(teacherId);
+
+      // 마이그레이션 수행
+      const { migratedGames, migratedStudents, result } = migrateStatsData(
+        finishedGames as FinishedGame[],
+        allStudents
+      );
+
+      // 마이그레이션된 데이터 저장
+      if (result.gamesUpdated > 0) {
+        localStorage.setItem(
+          `${STORAGE_KEYS.FINISHED_GAMES_PREFIX}${teacherId}`,
+          JSON.stringify(migratedGames)
+        );
+      }
+
+      if (result.studentsUpdated > 0) {
+        for (const student of migratedStudents) {
+          await updateStudent(student.id, student);
+        }
+      }
+
+      setMigrationResult(result);
+      const message = formatStatsMigrationResult(result);
+      alert(message);
+
+      // 데이터 새로고침
+      await loadData();
+
+    } catch (error) {
+      console.error('❌ 스탯 마이그레이션 실패:', error);
+      alert('스탯 마이그레이션에 실패했습니다.');
+    } finally {
+      setIsMigratingStats(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -292,6 +353,26 @@ export default function ManagementPage() {
 
           {/* 우측 액션 버튼들 */}
           <div className="flex gap-3 pr-4">
+            {/* 스탯 마이그레이션 버튼 */}
+            <Button
+              onClick={handleMigrateStats}
+              disabled={isMigratingStats}
+              size="default"
+              className="bg-orange-100 text-orange-700 hover:bg-orange-200 font-semibold disabled:opacity-50"
+            >
+              {isMigratingStats ? (
+                <>
+                  <RefreshCw className="w-5 h-5 mr-1 animate-spin" />
+                  마이그레이션 중...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-5 h-5 mr-1" />
+                  스탯 마이그레이션
+                </>
+              )}
+            </Button>
+
             {/* 현재 탭에 따라 추가 버튼 표시 */}
             {activeTab === 'classes' && (
               <Link href="/teacher/create-class">
@@ -339,12 +420,8 @@ export default function ManagementPage() {
                 <div className="grid grid-cols-4 gap-2 px-12">
                   {paginatedClasses.map((classItem) => {
                     const students = studentsByClass[classItem.id] || [];
-                    const totalOuts = students.reduce((sum, s) => sum + (s.outs || 0), 0);
-                    const totalPasses = students.reduce((sum, s) => sum + (s.passes || 0), 0);
-                    const totalSacrifices = students.reduce((sum, s) => sum + (s.sacrifices || 0), 0);
-                    const totalCookies = students.reduce((sum, s) => sum + (s.cookies || 0), 0);
-                    const totalScore = totalOuts + totalPasses + totalSacrifices + totalCookies;
-                    const totalBadges = students.reduce((sum, s) => sum + (s.badges?.length || 0), 0);
+                    const classStats = calculateClassStats(students);
+                    const totalScore = classStats.totalHits + classStats.totalPasses + classStats.totalSacrifices + classStats.totalCookies;
 
                     return (
                       <Card
@@ -373,26 +450,26 @@ export default function ManagementPage() {
 
                           {/* 2행: 스탯별 점수 + 배지 */}
                           <div className="flex items-center justify-center gap-2.5 text-base">
-                            <span className="flex items-center gap-0.5" title="아웃">
+                            <span className="flex items-center gap-0.5" title="적중">
                               <span className="text-base">🎯</span>
-                              <span className="font-semibold text-base">{totalOuts}</span>
+                              <span className="font-semibold text-base">{classStats.totalHits}</span>
                             </span>
                             <span className="flex items-center gap-0.5" title="패스">
                               <span className="text-base">✋</span>
-                              <span className="font-semibold text-base">{totalPasses}</span>
+                              <span className="font-semibold text-base">{classStats.totalPasses}</span>
                             </span>
-                            <span className="flex items-center gap-0.5" title="희생">
+                            <span className="flex items-center gap-0.5" title="양보">
                               <span className="text-base">❤️</span>
-                              <span className="font-semibold text-base">{totalSacrifices}</span>
+                              <span className="font-semibold text-base">{classStats.totalSacrifices}</span>
                             </span>
                             <span className="flex items-center gap-0.5" title="쿠키">
                               <span className="text-base">🍪</span>
-                              <span className="font-semibold text-base">{totalCookies}</span>
+                              <span className="font-semibold text-base">{classStats.totalCookies}</span>
                             </span>
                             <span className="flex items-center gap-0.5" title="배지">
                               <span className="text-base">🏆</span>
                               <span className="font-semibold text-base text-yellow-600">
-                                {totalBadges}
+                                {classStats.totalBadges}
                               </span>
                             </span>
                           </div>
@@ -478,35 +555,14 @@ export default function ManagementPage() {
                 <div className="grid grid-cols-4 gap-2 px-12">
                   {paginatedTeams.map((team) => {
                     const teamMembers = team.members || [];
-                    const totalOuts = teamMembers.reduce((sum, m) => {
-                      const student = allStudents.find(s => s.id === m.studentId);
-                      return sum + (student?.outs || 0);
-                    }, 0);
-                    const totalPasses = teamMembers.reduce((sum, m) => {
-                      const student = allStudents.find(s => s.id === m.studentId);
-                      return sum + (student?.passes || 0);
-                    }, 0);
-                    const totalSacrifices = teamMembers.reduce((sum, m) => {
-                      const student = allStudents.find(s => s.id === m.studentId);
-                      return sum + (student?.sacrifices || 0);
-                    }, 0);
-                    const totalCookies = teamMembers.reduce((sum, m) => {
-                      const student = allStudents.find(s => s.id === m.studentId);
-                      return sum + (student?.cookies || 0);
-                    }, 0);
-                    const totalScore = totalOuts + totalPasses + totalSacrifices + totalCookies;
-                    const totalBadges = teamMembers.reduce((sum, m) => {
-                      const student = allStudents.find(s => s.id === m.studentId);
-                      return sum + (student?.badges?.length || 0);
-                    }, 0);
+                    const teamStats = calculateTeamStats(team, allStudents);
+                    const totalScore = teamStats.totalHits + teamStats.totalPasses + teamStats.totalSacrifices + teamStats.totalCookies;
 
                     return (
                       <Card
                         key={team.id}
-                        className={`relative py-3 px-3 cursor-pointer transition-all hover:shadow-md ${
-                          selectedTeamId === team.id ? 'ring-2 ring-primary bg-primary/5' : ''
-                        }`}
-                        onClick={() => setSelectedTeamId(selectedTeamId === team.id ? null : team.id)}
+                        className="relative py-3 px-3 cursor-pointer transition-all hover:shadow-md"
+                        onClick={() => setSelectedTeam(team)}
                       >
                         <div className="flex flex-col items-center justify-center gap-1.5">
                           {/* 1행: 팀 이름 | 인원 | 총점 */}
@@ -526,25 +582,25 @@ export default function ManagementPage() {
 
                           {/* 2행: 스탯별 점수 + 배지 */}
                           <div className="flex items-center justify-center gap-2.5 text-base">
-                            <span className="flex items-center gap-0.5" title="아웃">
+                            <span className="flex items-center gap-0.5" title="적중">
                               <span className="text-base">🎯</span>
-                              <span className="font-semibold text-base">{totalOuts}</span>
+                              <span className="font-semibold text-base">{teamStats.totalHits}</span>
                             </span>
                             <span className="flex items-center gap-0.5" title="패스">
                               <span className="text-base">✋</span>
-                              <span className="font-semibold text-base">{totalPasses}</span>
+                              <span className="font-semibold text-base">{teamStats.totalPasses}</span>
                             </span>
-                            <span className="flex items-center gap-0.5" title="희생">
+                            <span className="flex items-center gap-0.5" title="양보">
                               <span className="text-base">❤️</span>
-                              <span className="font-semibold text-base">{totalSacrifices}</span>
+                              <span className="font-semibold text-base">{teamStats.totalSacrifices}</span>
                             </span>
                             <span className="flex items-center gap-0.5" title="쿠키">
                               <span className="text-base">🍪</span>
-                              <span className="font-semibold text-base">{totalCookies}</span>
+                              <span className="font-semibold text-base">{teamStats.totalCookies}</span>
                             </span>
                             <span className="flex items-center gap-0.5" title="배지">
                               <span className="text-base">🏆</span>
-                              <span className="font-semibold text-base text-yellow-600">{totalBadges}</span>
+                              <span className="font-semibold text-base text-yellow-600">{teamStats.totalBadges}</span>
                             </span>
                           </div>
                         </div>
@@ -599,165 +655,6 @@ export default function ManagementPage() {
                   ))}
                 </div>
               )}
-
-              {/* 선택된 팀 상세 정보 (하단) */}
-              {selectedTeamId ? (
-                <Card className="p-4 max-h-[calc(100vh-16rem)] overflow-y-auto">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-foreground">
-                      {teams.find(t => t.id === selectedTeamId)?.name} 상세
-                    </h3>
-                    <Button
-                      onClick={() => {
-                        const team = teams.find(t => t.id === selectedTeamId);
-                        const classId = team?.sourceClassIds?.[0] || team?.members[0]?.classId;
-                        if (classId) {
-                          router.push(`/teacher/class/${classId}/teams`);
-                        }
-                      }}
-                      variant="outline"
-                      className="font-semibold"
-                    >
-                      상세 관리
-                    </Button>
-                  </div>
-
-                  {/* 팀 선수 명단 */}
-                  {(() => {
-                    const selectedTeam = teams.find(t => t.id === selectedTeamId);
-                    const teamMembers = selectedTeam?.members || [];
-
-                    return teamMembers.length > 0 ? (
-                      <div className="space-y-2">
-                        {teamMembers.map((member, index) => {
-                          const student = allStudents.find(s => s.id === member.studentId);
-                          if (!student) return null;
-
-                          return (
-                            <div
-                              key={member.studentId}
-                              className="grid grid-cols-[auto_1fr_1fr_1fr_2fr] gap-3 items-center px-3 py-2 border rounded-lg hover:bg-muted/50 transition-colors bg-background"
-                            >
-                              {/* 타순 */}
-                              <div className="flex items-center justify-center">
-                                <div className="inline-flex items-center justify-center bg-slate-100 text-black px-2.5 py-1 rounded-full font-bold text-sm border-2 border-slate-300">
-                                  {index + 1}번
-                                </div>
-                              </div>
-
-                              {/* 이름 */}
-                              <div className="flex items-center justify-center min-w-0">
-                                <span className="font-bold text-base truncate">{student.name}</span>
-                              </div>
-
-                              {/* 학급 */}
-                              <div className="flex items-center justify-center">
-                                <span className="text-sm px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-700 rounded whitespace-nowrap">
-                                  {classes.find(c => c.id === student.classId)?.name || '-'}
-                                </span>
-                              </div>
-
-                              {/* 번호 */}
-                              <div className="flex items-center justify-center">
-                                <span className="text-sm font-bold text-muted-foreground">#{student.number}</span>
-                              </div>
-
-                              {/* 스탯 */}
-                              <div className="flex items-center justify-center">
-                                <span className="inline-flex items-center gap-2.5 text-sm font-semibold">
-                                  <span title="아웃" className="flex items-center gap-0.5">
-                                    <span>🎯</span>{student.outs || 0}
-                                  </span>
-                                  <span title="패스" className="flex items-center gap-0.5">
-                                    <span>✋</span>{student.passes || 0}
-                                  </span>
-                                  <span title="희생" className="flex items-center gap-0.5">
-                                    <span>❤️</span>{student.sacrifices || 0}
-                                  </span>
-                                  <span title="쿠키" className="flex items-center gap-0.5">
-                                    <span>🍪</span>{student.cookies || 0}
-                                  </span>
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-
-                        {/* 팀 전체 합계 */}
-                        {selectedTeam && (
-                          <div className="mt-4 pt-4 border-t-2 border-primary/20">
-                            <div className="flex items-center justify-center gap-6 py-3 bg-blue-50 rounded-lg">
-                              <div className="flex items-center gap-2">
-                                <span className="text-lg">🎯</span>
-                                <span className="font-bold">
-                                  {teamMembers.reduce((sum, m) => {
-                                    const s = allStudents.find(st => st.id === m.studentId);
-                                    return sum + (s?.outs || 0);
-                                  }, 0)}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-lg">✋</span>
-                                <span className="font-bold">
-                                  {teamMembers.reduce((sum, m) => {
-                                    const s = allStudents.find(st => st.id === m.studentId);
-                                    return sum + (s?.passes || 0);
-                                  }, 0)}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-lg">❤️</span>
-                                <span className="font-bold">
-                                  {teamMembers.reduce((sum, m) => {
-                                    const s = allStudents.find(st => st.id === m.studentId);
-                                    return sum + (s?.sacrifices || 0);
-                                  }, 0)}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-lg">🍪</span>
-                                <span className="font-bold">
-                                  {teamMembers.reduce((sum, m) => {
-                                    const s = allStudents.find(st => st.id === m.studentId);
-                                    return sum + (s?.cookies || 0);
-                                  }, 0)}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 ml-4 pl-4 border-l-2 border-blue-300">
-                                <span className="text-lg">📊</span>
-                                <span className="font-bold text-blue-600">
-                                  총점: {teamMembers.reduce((sum, m) => {
-                                    const s = allStudents.find(st => st.id === m.studentId);
-                                    return sum + (s?.outs || 0) + (s?.passes || 0) + (s?.sacrifices || 0) + (s?.cookies || 0);
-                                  }, 0)}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-lg">🏆</span>
-                                <span className="font-bold text-yellow-600">
-                                  배지: {teamMembers.reduce((sum, m) => {
-                                    const s = allStudents.find(st => st.id === m.studentId);
-                                    return sum + (s?.badges?.length || 0);
-                                  }, 0)}개
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-center text-muted-foreground py-12">
-                        등록된 선수가 없습니다.
-                      </div>
-                    );
-                  })()}
-                </Card>
-              ) : (
-                <Card className="p-8 text-center text-muted-foreground">
-                  <p className="text-4xl mb-3">👥</p>
-                  <p>팀을 선택하면 선수 명단이 표시됩니다</p>
-                </Card>
-              )}
             </div>
           )}
 
@@ -789,6 +686,14 @@ export default function ManagementPage() {
         classData={selectedClassForModal}
         students={selectedClassForModal ? (studentsByClass[selectedClassForModal.id] || []) : []}
         onRandomTeamGeneration={selectedClassForModal ? () => handleRandomTeamGeneration(selectedClassForModal.id) : undefined}
+      />
+
+      {/* 팀 상세 모달 */}
+      <TeamDetailModal
+        isOpen={!!selectedTeam}
+        team={selectedTeam}
+        allStudents={allStudents}
+        onClose={() => setSelectedTeam(null)}
       />
     </main>
   );

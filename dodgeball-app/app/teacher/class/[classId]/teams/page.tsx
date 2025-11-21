@@ -16,6 +16,7 @@ import { TeamDropZone } from '@/components/TeamDropZone';
 import { RandomTeamModal } from '@/components/RandomTeamModal';
 import { AddTeamModal } from '@/components/AddTeamModal';
 import { AddClassStudentsModal } from '@/components/AddClassStudentsModal';
+import { TeamDetailModal } from '@/components/teacher/TeamDetailModal';
 import { randomTeamAssignment, generateTeamName, assignTeamColor, TeamNamingStyle } from '@/lib/teamUtils';
 
 export default function TeamsPage() {
@@ -31,6 +32,7 @@ export default function TeamsPage() {
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
   const [showRandomModal, setShowRandomModal] = useState(false);
   const [showAddClassStudentsModal, setShowAddClassStudentsModal] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [teacherClasses, setTeacherClasses] = useState<Class[]>([]);
   const [activeStudent, setActiveStudent] = useState<Student | null>(null);
 
@@ -155,6 +157,42 @@ export default function TeamsPage() {
     } catch (error) {
       console.error('Failed to delete team:', error);
       alert('팀 삭제에 실패했습니다.');
+    }
+  };
+
+  const handleRenameTeam = async (newName: string) => {
+    if (!selectedTeam) return;
+
+    try {
+      await updateTeam(selectedTeam.id, { name: newName });
+      await loadData();
+      // selectedTeam 업데이트
+      const updatedTeam = teams.find(t => t.id === selectedTeam.id);
+      if (updatedTeam) {
+        setSelectedTeam(updatedTeam);
+      }
+    } catch (error) {
+      console.error('Failed to rename team:', error);
+      alert('팀 이름 변경에 실패했습니다.');
+    }
+  };
+
+  const handleRemoveMemberFromTeam = async (studentId: string) => {
+    if (!selectedTeam) return;
+
+    try {
+      await updateTeam(selectedTeam.id, {
+        members: selectedTeam.members.filter(m => m.studentId !== studentId)
+      });
+      await loadData();
+      // selectedTeam 업데이트
+      const updatedTeam = teams.find(t => t.id === selectedTeam.id);
+      if (updatedTeam) {
+        setSelectedTeam(updatedTeam);
+      }
+    } catch (error) {
+      console.error('Failed to remove member:', error);
+      alert('팀원 제거에 실패했습니다.');
     }
   };
 
@@ -472,18 +510,25 @@ export default function TeamsPage() {
               return (
                 <div key={`team_${team.id}_${index}`}>
                   {/* 헤더 카드 */}
-                  <div className={`
-                    flex justify-between items-center
-                    px-4 py-3 mb-3 rounded-lg border-2
-                    ${colorClasses}
-                  `}>
+                  <div
+                    className={`
+                      flex justify-between items-center
+                      px-4 py-3 mb-3 rounded-lg border-2 cursor-pointer
+                      transition-all hover:shadow-md
+                      ${colorClasses}
+                    `}
+                    onClick={() => setSelectedTeam(team)}
+                  >
                     <h3 className="text-lg font-bold text-gray-800">
                       {team.name} <span className="text-gray-600">({teamStudents.length}명)</span>
                     </h3>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleDeleteTeam(team.id, team.name)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteTeam(team.id, team.name);
+                      }}
                       className="text-red-500 hover:text-red-700 h-8 px-3"
                     >
                       삭제
@@ -557,6 +602,16 @@ export default function TeamsPage() {
             onCancel={() => setShowAddClassStudentsModal(false)}
           />
         )}
+
+        {/* 팀 상세 모달 */}
+        <TeamDetailModal
+          isOpen={!!selectedTeam}
+          team={selectedTeam}
+          allStudents={allStudents}
+          onClose={() => setSelectedTeam(null)}
+          onRename={handleRenameTeam}
+          onRemoveMember={handleRemoveMemberFromTeam}
+        />
         </div>
       </main>
     </div>

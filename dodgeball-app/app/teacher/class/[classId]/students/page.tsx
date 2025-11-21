@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { getClassById, getStudents, createStudent, deleteStudent, updateStudent } from '@/lib/dataService';
 import { Class, Student } from '@/types';
 import { StudentCard } from '@/components/teacher/StudentCard';
-import { loadCustomBadges } from '@/lib/badgeHelpers';
+import { loadCustomBadges, recalculateAllStudentBadges } from '@/lib/badgeHelpers';
 import { calculateClassStats, formatStatsWithIcons } from '@/lib/statsHelpers';
 
 export default function StudentsPage() {
@@ -363,6 +363,39 @@ ${gradePart},${classPart},10,오태양`;
     }
   };
 
+  // 배지 재계산 핸들러
+  const handleRecalculateBadges = async () => {
+    if (!students || students.length === 0) {
+      alert('재계산할 학생이 없습니다.');
+      return;
+    }
+
+    const confirmed = confirm(
+      `전체 ${students.length}명의 학생 배지를 재계산하시겠습니까?\n\n` +
+      '현재 누적 스탯을 기반으로 받지 못한 배지를 자동 수여합니다.\n' +
+      '이미 받은 배지는 그대로 유지됩니다.'
+    );
+
+    if (!confirmed) return;
+
+    try {
+      console.log('🚀 배지 재계산 시작...');
+      const { totalBadgesAwarded, studentsUpdated } = await recalculateAllStudentBadges(students);
+
+      alert(
+        `배지 재계산이 완료되었습니다!\n\n` +
+        `✅ 업데이트된 학생 수: ${studentsUpdated}명\n` +
+        `🏆 총 수여된 배지: ${totalBadgesAwarded}개`
+      );
+
+      // 데이터 새로고침
+      await loadData();
+    } catch (error) {
+      console.error('❌ 배지 재계산 실패:', error);
+      alert('배지 재계산에 실패했습니다.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -383,9 +416,18 @@ ${gradePart},${classPart},10,오태양`;
             </h1>
             <p className="text-gray-600">총 {students.length}명</p>
           </div>
-          <Link href="/teacher/dashboard">
-            <Button variant="outline">대시보드로</Button>
-          </Link>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleRecalculateBadges}
+              className="bg-amber-50 hover:bg-amber-100 border-amber-300"
+            >
+              🏆 배지 재계산
+            </Button>
+            <Link href="/teacher/dashboard">
+              <Button variant="outline">대시보드로</Button>
+            </Link>
+          </div>
         </div>
 
         {/* 학생 추가 버튼 */}

@@ -32,7 +32,7 @@ interface GameHistoryDisplay {
   };
   result: 'win' | 'loss' | 'draw';
   stats: {
-    outs: number;
+    hits: number;
     passes: number;
     sacrifices: number;
     cookies: number;
@@ -100,7 +100,7 @@ export function StudentHistoryModal({
           },
           result,
           stats: {
-            outs: studentRecord?.outs || 0,
+            hits: studentRecord?.hits || 0,
             passes: studentRecord?.passes || 0,
             sacrifices: studentRecord?.sacrifices || 0,
             cookies: studentRecord?.cookies || 0
@@ -129,13 +129,13 @@ export function StudentHistoryModal({
   // 누적 통계 계산
   const totalStats = games.reduce(
     (acc, game) => ({
-      outs: acc.outs + (game.stats.outs || 0),
+      hits: acc.hits + (game.stats.hits || 0),
       passes: acc.passes + (game.stats.passes || 0),
       sacrifices: acc.sacrifices + (game.stats.sacrifices || 0),
       cookies: acc.cookies + (game.stats.cookies || 0),
       wins: acc.wins + (game.result === 'win' ? 1 : 0)
     }),
-    { outs: 0, passes: 0, sacrifices: 0, cookies: 0, wins: 0 }
+    { hits: 0, passes: 0, sacrifices: 0, cookies: 0, wins: 0 }
   );
 
   const formatDate = (dateString: string) => {
@@ -173,18 +173,18 @@ export function StudentHistoryModal({
               <h3 className="font-bold text-lg mb-3 text-blue-900">📊 누적 통계</h3>
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl">⚾</span>
-                  <span className="text-sm text-muted-foreground">아웃:</span>
-                  <span className="font-bold text-lg">{totalStats.outs}</span>
+                  <span className="text-2xl">🎯</span>
+                  <span className="text-sm text-muted-foreground">적중:</span>
+                  <span className="font-bold text-lg">{totalStats.hits}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl">🏃</span>
-                  <span className="text-sm text-muted-foreground">통과:</span>
+                  <span className="text-2xl">✋</span>
+                  <span className="text-sm text-muted-foreground">패스:</span>
                   <span className="font-bold text-lg">{totalStats.passes}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl">🛡️</span>
-                  <span className="text-sm text-muted-foreground">희생:</span>
+                  <span className="text-2xl">❤️</span>
+                  <span className="text-sm text-muted-foreground">양보:</span>
                   <span className="font-bold text-lg">{totalStats.sacrifices}</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -260,15 +260,15 @@ export function StudentHistoryModal({
                       {/* 두 번째 줄: 스탯 */}
                       <div className="flex items-center gap-4 text-sm">
                         <span className="flex items-center gap-1">
-                          <span>⚾</span>
-                          <span className="font-semibold">{game.stats.outs}</span>
+                          <span>🎯</span>
+                          <span className="font-semibold">{game.stats.hits}</span>
                         </span>
                         <span className="flex items-center gap-1">
-                          <span>🏃</span>
+                          <span>✋</span>
                           <span className="font-semibold">{game.stats.passes}</span>
                         </span>
                         <span className="flex items-center gap-1">
-                          <span>🛡️</span>
+                          <span>❤️</span>
                           <span className="font-semibold">{game.stats.sacrifices}</span>
                         </span>
                         <span className="flex items-center gap-1">

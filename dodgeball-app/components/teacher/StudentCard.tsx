@@ -81,15 +81,15 @@ export function StudentCard({
         {!isEditMode && (
           <div className="w-full pb-2">
             <div className="flex items-center justify-center gap-3 text-base">
-              <span className="flex items-center gap-1" title="아웃">
-                <span className="text-lg">{STAT_ICONS.outs}</span>
-                <span className="font-bold">{stats.outs}</span>
+              <span className="flex items-center gap-1" title="적중">
+                <span className="text-lg">{STAT_ICONS.hits}</span>
+                <span className="font-bold">{stats.hits}</span>
               </span>
               <span className="flex items-center gap-1" title="패스">
                 <span className="text-lg">{STAT_ICONS.passes}</span>
                 <span className="font-bold">{stats.passes}</span>
               </span>
-              <span className="flex items-center gap-1" title="희생">
+              <span className="flex items-center gap-1" title="양보">
                 <span className="text-lg">{STAT_ICONS.sacrifices}</span>
                 <span className="font-bold">{stats.sacrifices}</span>
               </span>

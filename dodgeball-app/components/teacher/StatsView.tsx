@@ -210,9 +210,9 @@ const StatsView = ({ finishedGames, teams, students = [], onBack }: StatsViewPro
                                 <div key={idx} className="bg-white rounded-lg px-6 py-4 shadow-md flex-1 min-w-[300px] flex items-center gap-4">
                                   <div className="font-bold text-yellow-900 text-2xl">{mvp.name}</div>
                                   <div className="text-xl text-gray-700 flex items-center gap-4 font-semibold">
-                                    <span>🎯 {mvp.outs || 0}</span>
-                                    <span>🏃 {mvp.passes || 0}</span>
-                                    <span>🛡️ {mvp.sacrifices || 0}</span>
+                                    <span>🎯 {mvp.hits || 0}</span>
+                                    <span>✋ {mvp.passes || 0}</span>
+                                    <span>❤️ {mvp.sacrifices || 0}</span>
                                     <span>🍪 {mvp.cookies || 0}</span>
                                     <span className="font-black text-orange-600 text-2xl">{mvp.totalPoints}점</span>
                                   </div>
@@ -259,7 +259,7 @@ const StatsView = ({ finishedGames, teams, students = [], onBack }: StatsViewPro
                                         <th className="border-2 border-gray-300 p-4 text-center text-gray-900 w-32">배지</th>
                                         <th className="border-2 border-gray-300 p-4 text-center text-gray-900 w-36">이름</th>
                                         <th className="border-2 border-gray-300 p-4 text-center text-gray-900 w-28">❤️</th>
-                                        <th className="border-2 border-gray-300 p-4 text-center text-gray-900 w-24">아웃</th>
+                                        <th className="border-2 border-gray-300 p-4 text-center text-gray-900 w-24">적중</th>
                                         <th className="border-2 border-gray-300 p-4 text-center text-gray-900 w-24">패스</th>
                                         <th className="border-2 border-gray-300 p-4 text-center text-gray-900 w-24">양보</th>
                                         <th className="border-2 border-gray-300 p-4 text-center text-gray-900 w-24">쿠키</th>

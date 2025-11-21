@@ -4,13 +4,15 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Game, Student, FinishedGame, GameHistoryEntry } from '@/types';
+import { Game, Student, FinishedGame, GameHistoryEntry, Badge } from '@/types';
 import { getGameById, getStudents, updateGame, updateStudent, getStudentById, updatePlayerHistory, saveFinishedGame, getCurrentTeacherId } from '@/lib/dataService';
 import { DodgeballCourt } from '@/components/teacher/DodgeballCourt';
 import { ScoreBoard } from '@/components/teacher/ScoreBoard';
 import { TeamLineupTable } from '@/components/teacher/TeamLineupTable';
 import { calculateMVPScore, findMVP } from '@/lib/mvpCalculator';
 import { checkAndAwardBadges } from '@/lib/badgeHelpers';
+import { BadgeCelebrationModal } from '@/components/teacher/BadgeCelebrationModal';
+import { checkNewBadges } from '@/lib/badgeSystem';
 
 export default function GamePlayPage() {
   const router = useRouter();
@@ -22,6 +24,11 @@ export default function GamePlayPage() {
   const [gameData, setGameData] = useState<Game | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // 배지 축하 모달 상태
+  const [showBadgeCelebration, setShowBadgeCelebration] = useState(false);
+  const [celebrationBadges, setCelebrationBadges] = useState<Badge[]>([]);
+  const [celebrationPlayerName, setCelebrationPlayerName] = useState('');
 
   useEffect(() => {
     if (!gameId) {
@@ -112,6 +119,14 @@ export default function GamePlayPage() {
     console.log('📊 handleStatUpdate called:', studentId, stat, delta);
     if (!gameData || gameData.isCompleted) return;
 
+    // 현재 학생 정보 가져오기
+    const student = students.find(s => s.id === studentId);
+    if (!student) return;
+
+    // 현재 경기 기록 가져오기
+    const currentRecord = gameData.records.find(r => r.studentId === studentId);
+    if (!currentRecord) return;
+
     const newRecords = gameData.records.map(record => {
       if (record.studentId === studentId) {
         const oldValue = record[stat];
@@ -120,6 +135,47 @@ export default function GamePlayPage() {
       }
       return record;
     });
+
+    // 업데이트된 경기 기록 가져오기
+    const updatedRecord = newRecords.find(r => r.studentId === studentId)!;
+
+    // 누적 스탯 계산 (기존 스탯 + 이번 경기 스탯)
+    const projectedStats = {
+      hits: student.stats.hits + updatedRecord.outs,
+      passes: student.stats.passes + updatedRecord.passes,
+      sacrifices: student.stats.sacrifices + updatedRecord.sacrifices,
+      cookies: student.stats.cookies + updatedRecord.cookies,
+      gamesPlayed: student.stats.gamesPlayed + 1, // 현재 경기 포함
+      totalScore: 0 // 아래에서 계산
+    };
+    projectedStats.totalScore =
+      projectedStats.hits +
+      projectedStats.passes +
+      projectedStats.sacrifices +
+      projectedStats.cookies;
+
+    // 배지 체크 (현재 보유 배지 제외하고 새로 획득 가능한 배지 찾기)
+    const currentBadgeIds = student.badges.map(b => b.id);
+    const newBadges = checkNewBadges(projectedStats, currentBadgeIds);
+
+    // 새 배지가 있으면 축하 모달 표시
+    if (newBadges.length > 0 && delta > 0) { // delta > 0: 증가할 때만 표시
+      console.log(`🏆 ${student.name}님이 ${newBadges.length}개 배지 획득!`, newBadges);
+
+      const badgesToShow: Badge[] = newBadges.map(badge => ({
+        id: badge.id,
+        name: badge.name,
+        emoji: badge.icon,
+        tier: badge.tier,
+        awardedAt: new Date().toISOString(),
+        isAuto: true,
+        reason: `경기 중 ${badge.description}`
+      }));
+
+      setCelebrationBadges(badgesToShow);
+      setCelebrationPlayerName(student.name);
+      setShowBadgeCelebration(true);
+    }
 
     const updated = { ...gameData, records: newRecords };
     setGameData(updated);
@@ -218,12 +274,12 @@ export default function GamePlayPage() {
         playerId: record.studentId,
         playerName: students.find(s => s.id === record.studentId)?.name || '알 수 없음',
         stats: {
-          outs: record.outs,
+          hits: record.hits,
           passes: record.passes,
           sacrifices: record.sacrifices,
           cookies: record.cookies,
           gamesPlayed: 1,
-          totalScore: record.outs + record.passes + record.sacrifices + record.cookies
+          totalScore: record.hits + record.passes + record.sacrifices + record.cookies
         }
       }));
 
@@ -246,7 +302,7 @@ export default function GamePlayPage() {
         const { awardedBadges, updatedStudent } = await checkAndAwardBadges(
           student,
           {
-            outs: record.outs,
+            hits: record.hits,
             passes: record.passes,
             sacrifices: record.sacrifices,
             cookies: record.cookies
@@ -269,12 +325,12 @@ export default function GamePlayPage() {
           teamName: originalTeam?.name || '알 수 없음',
           isOriginalTeam,
           stats: {
-            outs: record.outs,
+            hits: record.hits,
             passes: record.passes,
             sacrifices: record.sacrifices,
             cookies: record.cookies,
             gamesPlayed: 1,
-            totalScore: record.outs + record.passes + record.sacrifices + record.cookies
+            totalScore: record.hits + record.passes + record.sacrifices + record.cookies
           },
           newBadges: awardedBadges.map(b => b.id),
           result: originalTeam?.teamId === winner.teamId ? 'win' : 'loss'
@@ -379,8 +435,8 @@ export default function GamePlayPage() {
   }
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
-      <main className="flex-grow pt-20 px-6 pb-6 overflow-hidden">
+    <div className="h-screen bg-gray-50 flex flex-col">
+      <main className="flex-grow pt-20 px-6 pb-6">
         <div className="max-w-7xl mx-auto h-full flex flex-col gap-3">
         {/* 헤더: 네비게이션 - management 페이지 스타일 */}
         <div className="flex gap-3 flex-shrink-0 mb-6">
@@ -448,6 +504,14 @@ export default function GamePlayPage() {
         </div>
         </div>
       </main>
+
+      {/* 배지 축하 모달 */}
+      <BadgeCelebrationModal
+        badges={celebrationBadges}
+        playerName={celebrationPlayerName}
+        isOpen={showBadgeCelebration}
+        onClose={() => setShowBadgeCelebration(false)}
+      />
     </div>
   );
 }

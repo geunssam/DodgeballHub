@@ -207,7 +207,7 @@ export function TeamLineupTable({ team, students, gameRecords, onStatUpdate, onL
                       badges={student.badges}
                       size="sm"
                       maxDisplay={3}
-                      direction="vertical"
+                      direction="horizontal"
                     />
                   </td>
                   <td className="text-center align-middle">

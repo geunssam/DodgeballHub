@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { MigrationProvider } from "@/components/MigrationProvider";
-import { NavBar } from "@/components/NavBar";
-import { Footer } from "@/components/Footer";
+import { LayoutWrapper } from "@/components/LayoutWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,14 +27,12 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-hidden`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <MigrationProvider>
-          <NavBar />
-          <div style={{ height: 'calc(100vh - 4rem - 3rem)', overflow: 'hidden' }}>
+          <LayoutWrapper>
             {children}
-          </div>
-          <Footer />
+          </LayoutWrapper>
         </MigrationProvider>
       </body>
     </html>
