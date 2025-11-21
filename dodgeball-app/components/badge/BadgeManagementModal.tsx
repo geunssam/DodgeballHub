@@ -4,7 +4,6 @@ import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -16,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { getAllBadges, BADGE_TIERS, type BadgeDefinition } from '@/lib/badgeSystem';
 import type { CustomBadge, Student } from '@/types';
 import { Eye, EyeOff, Trash2, RefreshCcw, Users } from 'lucide-react';
+import { BadgeCreator } from './BadgeCreator';
 
 interface BadgeManagementModalProps {
   isOpen: boolean;
@@ -26,6 +26,7 @@ interface BadgeManagementModalProps {
   onToggleBadgeVisibility: (badgeId: string) => void;
   onDeleteCustomBadge: (badgeId: string) => void;
   onRecalculateAll: () => void;
+  onSaveCustomBadge?: (badge: CustomBadge) => void;
 }
 
 export function BadgeManagementModal({
@@ -37,8 +38,13 @@ export function BadgeManagementModal({
   onToggleBadgeVisibility,
   onDeleteCustomBadge,
   onRecalculateAll,
+  onSaveCustomBadge,
 }: BadgeManagementModalProps) {
   const [isRecalculating, setIsRecalculating] = useState(false);
+  const [activeTab, setActiveTab] = useState('create');
+  const [editMode, setEditMode] = useState<'system' | 'custom'>('custom');
+  const [editingBadge, setEditingBadge] = useState<any | null>(null);
+
   const systemBadges = getAllBadges();
 
   // 배지별 보유 학생 수 계산
@@ -91,43 +97,88 @@ export function BadgeManagementModal({
     }
   };
 
+  const handleSaveBadge = (badge: any) => {
+    if (onSaveCustomBadge) {
+      onSaveCustomBadge(badge);
+    }
+    setEditingBadge(null);
+    setActiveTab('edit');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingBadge(null);
+  };
+
   // 시스템 배지 렌더링
   const renderSystemBadge = (badge: BadgeDefinition) => {
     const count = getBadgeCount(badge.id);
     const isHidden = hiddenBadgeIds.includes(badge.id);
 
     return (
-      <Card key={badge.id} className={cn('relative', isHidden && 'opacity-50')}>
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <span className="text-3xl">{badge.icon}</span>
-            <div className="flex-1 min-w-0">
-              <div className="font-semibold truncate">{badge.name}</div>
-              <div className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                {badge.description}
-              </div>
-              <div className="flex items-center gap-2 mt-2">
-                <Badge variant="outline" className={getTierColor(badge.tier)}>
-                  {getTierLabel(badge.tier)}
-                </Badge>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Users className="w-3 h-3" />
+      <Card
+        key={badge.id}
+        className={cn(
+          'w-full p-3 bg-card transition-all hover:scale-105 relative',
+          isHidden && 'opacity-50'
+        )}
+      >
+        <CardContent className="p-0">
+          <div className="flex flex-col items-center text-center gap-1.5">
+            {/* 배지 아이콘 */}
+            <div className="text-4xl">
+              {badge.icon}
+            </div>
+
+            {/* 배지 이름 */}
+            <h3 className="font-bold text-sm">
+              {badge.name}
+            </h3>
+
+            {/* 등급 표시 */}
+            <Badge variant="outline" className={getTierColor(badge.tier)}>
+              {getTierLabel(badge.tier)}
+            </Badge>
+
+            {/* 설명 */}
+            <p className="text-xs text-muted-foreground line-clamp-1">
+              {badge.description}
+            </p>
+
+            {/* 획득 현황 */}
+            <div className="mt-1 w-full">
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-muted-foreground">획득</span>
+                <span className={count > 0 ? 'text-primary font-semibold' : 'text-muted-foreground'}>
                   {count}명
-                </div>
+                </span>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onToggleBadgeVisibility(badge.id)}
-              title={isHidden ? '표시하기' : '숨기기'}
-            >
-              {isHidden ? (
-                <EyeOff className="w-4 h-4" />
-              ) : (
-                <Eye className="w-4 h-4" />
-              )}
-            </Button>
+
+            {/* 버튼 */}
+            <div className="flex gap-1 mt-2 w-full justify-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setEditingBadge(badge)}
+                title="수정"
+                className="h-8 w-8"
+              >
+                <span className="text-base">✏️</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onToggleBadgeVisibility(badge.id)}
+                title={isHidden ? '표시하기' : '숨기기'}
+                className="h-8 w-8"
+              >
+                {isHidden ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -140,31 +191,62 @@ export function BadgeManagementModal({
     const isHidden = hiddenBadgeIds.includes(badge.id);
 
     return (
-      <Card key={badge.id} className={cn('relative', isHidden && 'opacity-50')}>
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <span className="text-3xl">{badge.emoji}</span>
-            <div className="flex-1 min-w-0">
-              <div className="font-semibold truncate">{badge.name}</div>
-              <div className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                {badge.description}
-              </div>
-              <div className="flex items-center gap-2 mt-2">
-                <Badge variant="outline" className="bg-pink-100 text-pink-700 border-pink-300">
-                  커스텀
-                </Badge>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Users className="w-3 h-3" />
+      <Card
+        key={badge.id}
+        className={cn(
+          'w-full p-3 bg-card transition-all hover:scale-105 relative',
+          isHidden && 'opacity-50'
+        )}
+      >
+        <CardContent className="p-0">
+          <div className="flex flex-col items-center text-center gap-1.5">
+            {/* 배지 아이콘 */}
+            <div className="text-4xl">
+              {badge.emoji}
+            </div>
+
+            {/* 배지 이름 */}
+            <h3 className="font-bold text-sm">
+              {badge.name}
+            </h3>
+
+            {/* 등급 표시 */}
+            <Badge variant="outline" className="bg-pink-100 text-pink-700 border-pink-300">
+              커스텀
+            </Badge>
+
+            {/* 설명 */}
+            <p className="text-xs text-muted-foreground line-clamp-1">
+              {badge.description}
+            </p>
+
+            {/* 획득 현황 */}
+            <div className="mt-1 w-full">
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-muted-foreground">획득</span>
+                <span className={count > 0 ? 'text-primary font-semibold' : 'text-muted-foreground'}>
                   {count}명
-                </div>
+                </span>
               </div>
             </div>
-            <div className="flex gap-1">
+
+            {/* 버튼 */}
+            <div className="flex gap-1 mt-2 w-full justify-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setEditingBadge(badge)}
+                title="수정"
+                className="h-8 w-8"
+              >
+                <span className="text-base">✏️</span>
+              </Button>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => onToggleBadgeVisibility(badge.id)}
                 title={isHidden ? '표시하기' : '숨기기'}
+                className="h-8 w-8"
               >
                 {isHidden ? (
                   <EyeOff className="w-4 h-4" />
@@ -177,6 +259,7 @@ export function BadgeManagementModal({
                 size="icon"
                 onClick={() => handleDeleteCustomBadge(badge.id)}
                 title="삭제"
+                className="h-8 w-8"
               >
                 <Trash2 className="w-4 h-4 text-destructive" />
               </Button>
@@ -189,66 +272,118 @@ export function BadgeManagementModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle>배지 관리</DialogTitle>
-          <DialogDescription>
-            시스템 배지 및 커스텀 배지를 관리하고, 학생들의 배지를 다시 계산할 수 있습니다
-          </DialogDescription>
+      <DialogContent className="w-[95vw] max-w-[1600px] h-[85vh] flex flex-col p-0">
+        <DialogHeader className="flex-shrink-0 px-8 pt-6">
+          <DialogTitle>⚙️ 배지 편집</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden">
-          <Tabs defaultValue="system" className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="system">
-                시스템 배지 ({systemBadges.length})
-              </TabsTrigger>
-              <TabsTrigger value="custom">
-                커스텀 배지 ({customBadges.length})
-              </TabsTrigger>
-            </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden px-8">
+          <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
+            <TabsTrigger value="create">➕ 새로 만들기</TabsTrigger>
+            <TabsTrigger value="edit">✏️ 수정하기</TabsTrigger>
+            <TabsTrigger value="manage">🔧 관리</TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="system" className="flex-1 overflow-y-auto mt-4">
-              <div className="space-y-3 pb-4">
-                {systemBadges.map(renderSystemBadge)}
+          {/* 새로 만들기 탭 */}
+          <TabsContent value="create" className="max-w-full flex-1 overflow-y-auto px-2 mt-4 pb-6">
+            <BadgeCreator
+              onSave={handleSaveBadge}
+              standalone={false}
+            />
+          </TabsContent>
+
+          {/* 수정하기 탭 */}
+          <TabsContent value="edit" className="max-w-full flex-1 overflow-y-auto px-2 mt-4 pb-6">
+            {editingBadge ? (
+              <BadgeCreator
+                initialBadge={editingBadge}
+                onSave={handleSaveBadge}
+                onCancel={handleCancelEdit}
+                standalone={false}
+              />
+            ) : (
+              <div className="space-y-4 h-full flex flex-col px-2">
+                {/* 서브탭 */}
+                <Tabs value={editMode} onValueChange={(v) => setEditMode(v as 'system' | 'custom')} className="flex-1 flex flex-col overflow-hidden">
+                  <TabsList className="w-full flex-shrink-0">
+                    <TabsTrigger value="system" className="flex-1">
+                      🎯 기본 배지
+                    </TabsTrigger>
+                    <TabsTrigger value="custom" className="flex-1">
+                      ✨ 커스텀 배지
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* 기본 배지 */}
+                  <TabsContent value="system" className="max-w-full flex-1 overflow-y-auto px-2 mt-4">
+                    <div className="space-y-4">
+                      <p className="text-sm text-muted-foreground p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        ⚠️ 기본 배지는 아이콘과 이름만 수정할 수 있습니다.
+                      </p>
+                      <div className="grid grid-cols-4 gap-4">
+                        {systemBadges.map(renderSystemBadge)}
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  {/* 커스텀 배지 */}
+                  <TabsContent value="custom" className="max-w-full flex-1 overflow-y-auto px-2 mt-4">
+                    {customBadges.length === 0 ? (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <p className="text-5xl mb-4">📦</p>
+                        <p className="text-lg font-semibold mb-2">아직 만든 배지가 없습니다</p>
+                        <p className="text-sm">새로 만들기 탭에서 배지를 만들어보세요!</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-4 gap-4">
+                        {customBadges.map(renderCustomBadge)}
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </div>
-            </TabsContent>
+            )}
+          </TabsContent>
 
-            <TabsContent value="custom" className="flex-1 overflow-y-auto mt-4">
-              {customBadges.length > 0 ? (
-                <div className="space-y-3 pb-4">
-                  {customBadges.map(renderCustomBadge)}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                  <div className="text-5xl mb-4">🏆</div>
-                  <div className="text-lg font-medium mb-2">
-                    아직 커스텀 배지가 없습니다
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    특별한 성취를 위한 나만의 배지를 만들어보세요
-                  </div>
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </div>
+          {/* 관리 탭 */}
+          <TabsContent value="manage" className="max-w-full flex-1 overflow-y-auto px-2 mt-4 pb-6">
+            <Card className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="text-4xl">🔄</div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">
+                      전체 배지 재계산
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-3">
+                      모든 학생의 배지를 경기 기록을 기반으로 다시 계산합니다.
+                      배지 조건 변경, 데이터 오류 수정, 새 배지 추가 시 사용하세요.
+                    </p>
 
-        <div className="border-t pt-4 mt-4">
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-muted-foreground">
-              💡 팁: 배지를 숨기면 학생들에게 표시되지 않습니다
-            </div>
-            <Button
-              onClick={handleRecalculate}
-              disabled={isRecalculating}
-              variant="outline"
-            >
-              <RefreshCcw className={cn('w-4 h-4 mr-2', isRecalculating && 'animate-spin')} />
-              {isRecalculating ? '재계산 중...' : '전체 재계산'}
-            </Button>
-          </div>
-        </div>
+                    <Button
+                      onClick={handleRecalculate}
+                      disabled={isRecalculating}
+                      className="bg-amber-500 hover:bg-amber-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <RefreshCcw className={cn('w-4 h-4 mr-2', isRecalculating && 'animate-spin')} />
+                      {isRecalculating ? '재계산 중...' : '배지 재계산 시작'}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* 주의사항 */}
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800 font-semibold mb-2">⚠️ 주의사항</p>
+                  <ul className="text-sm text-yellow-700 space-y-1 list-disc list-inside">
+                    <li>학생 수가 많으면 시간이 걸릴 수 있습니다</li>
+                    <li>재계산 중에는 다른 작업을 피해주세요</li>
+                    <li>재계산 후 자동으로 저장됩니다</li>
+                  </ul>
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

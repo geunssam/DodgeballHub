@@ -7,17 +7,31 @@ import { Settings } from 'lucide-react';
 import { STORAGE_KEYS } from '@/lib/mockData';
 import { GameSettingsModal } from '@/components/teacher/GameSettingsModal';
 import { StudentCodeListModal } from '@/components/teacher/StudentCodeListModal';
+import { BadgeManagementModal } from '@/components/badge/BadgeManagementModal';
 import { getCurrentTeacherId, getClasses, getStudents } from '@/lib/dataService';
-import { Student } from '@/types';
+import {
+  loadCustomBadges,
+  loadHiddenBadges,
+  saveCustomBadges,
+  saveHiddenBadges,
+  toggleBadgeVisibility,
+  deleteCustomBadge,
+  recalculateAllStudentBadges
+} from '@/lib/badgeHelpers';
+import { Student, CustomBadge } from '@/types';
+import { toast } from 'sonner';
 
 export function NavBar() {
   const router = useRouter();
   const [showSettings, setShowSettings] = useState(false);
   const [showStudentCodeModal, setShowStudentCodeModal] = useState(false);
+  const [showBadgeManagement, setShowBadgeManagement] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState<Date | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [teacherId, setTeacherId] = useState<string>('');
+  const [customBadges, setCustomBadges] = useState<CustomBadge[]>([]);
+  const [hiddenBadgeIds, setHiddenBadgeIds] = useState<string[]>([]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -29,9 +43,9 @@ export function NavBar() {
     return () => clearInterval(timer);
   }, []);
 
-  // 모든 학급의 학생 데이터 로드
+  // 모든 학급의 학생 데이터 및 배지 데이터 로드
   useEffect(() => {
-    const loadAllStudents = async () => {
+    const loadAllData = async () => {
       const currentTeacherId = getCurrentTeacherId();
       if (!currentTeacherId) return;
 
@@ -46,10 +60,14 @@ export function NavBar() {
       }
 
       setAllStudents(students);
+
+      // 배지 데이터 로드
+      setCustomBadges(loadCustomBadges());
+      setHiddenBadgeIds(loadHiddenBadges());
     };
 
     if (isMounted) {
-      loadAllStudents();
+      loadAllData();
     }
   }, [isMounted]);
 
@@ -69,6 +87,50 @@ export function NavBar() {
   const handleLogout = () => {
     localStorage.removeItem(STORAGE_KEYS.CURRENT_TEACHER);
     router.push('/teacher/login');
+  };
+
+  // 배지 관리 핸들러들
+  const handleToggleBadgeVisibility = (badgeId: string) => {
+    toggleBadgeVisibility(badgeId);
+    setHiddenBadgeIds(loadHiddenBadges());
+    toast.success('배지 표시 설정이 변경되었습니다');
+  };
+
+  const handleDeleteCustomBadge = (badgeId: string) => {
+    deleteCustomBadge(badgeId);
+    setCustomBadges(loadCustomBadges());
+    toast.success('커스텀 배지가 삭제되었습니다');
+  };
+
+  const handleSaveCustomBadge = (badge: CustomBadge) => {
+    const existingBadges = loadCustomBadges();
+    const existingIndex = existingBadges.findIndex(b => b.id === badge.id);
+
+    if (existingIndex >= 0) {
+      // 기존 배지 수정
+      existingBadges[existingIndex] = badge;
+      toast.success('배지가 수정되었습니다');
+    } else {
+      // 새 배지 추가
+      existingBadges.push(badge);
+      toast.success('배지가 생성되었습니다');
+    }
+
+    saveCustomBadges(existingBadges);
+    setCustomBadges(loadCustomBadges());
+  };
+
+  const handleRecalculateAll = async () => {
+    try {
+      const result = await recalculateAllStudentBadges(allStudents);
+      toast.success(`${result.studentsUpdated}명의 학생에게 ${result.totalBadgesAwarded}개의 배지를 수여했습니다!`);
+
+      // 학생 데이터 다시 로드
+      await handleRefreshStudents();
+    } catch (error) {
+      console.error('배지 재계산 실패:', error);
+      toast.error('배지 재계산에 실패했습니다');
+    }
   };
 
   return (
@@ -119,21 +181,28 @@ export function NavBar() {
               </div>
             </div>
 
-            {/* 우측: 학생 코드 + 학급 랭킹 + 설정 및 로그아웃 */}
-            <div className="flex items-center gap-3">
+            {/* 우측: 학생 코드 + 학급 랭킹 + 배지 관리 + 설정 및 로그아웃 */}
+            <div className="flex items-center gap-2">
               <Button
                 onClick={() => setShowStudentCodeModal(true)}
                 size="sm"
-                className="bg-blue-100 hover:bg-blue-200 text-blue-700 border-blue-200 text-sm lg:text-base"
+                className="bg-blue-100 hover:bg-blue-200 text-blue-700 border-blue-200 text-sm"
               >
                 📋 학생코드
               </Button>
               <Button
                 onClick={() => router.push('/teacher/dashboard?view=rankings')}
                 size="sm"
-                className="bg-rose-100 hover:bg-rose-200 text-rose-700 border-rose-200 text-sm lg:text-base"
+                className="bg-rose-100 hover:bg-rose-200 text-rose-700 border-rose-200 text-sm"
               >
                 🏅 학급 랭킹
+              </Button>
+              <Button
+                onClick={() => setShowBadgeManagement(true)}
+                size="sm"
+                className="bg-purple-100 hover:bg-purple-200 text-purple-700 border-purple-200 text-sm"
+              >
+                🏆 배지관리
               </Button>
               <p className="text-sm font-semibold text-gray-900 hidden md:block">김교사 선생님</p>
               <Button
@@ -164,6 +233,18 @@ export function NavBar() {
         students={allStudents}
         teacherId={teacherId}
         onRefresh={handleRefreshStudents}
+      />
+
+      <BadgeManagementModal
+        isOpen={showBadgeManagement}
+        onClose={() => setShowBadgeManagement(false)}
+        students={allStudents}
+        customBadges={customBadges}
+        hiddenBadgeIds={hiddenBadgeIds}
+        onToggleBadgeVisibility={handleToggleBadgeVisibility}
+        onDeleteCustomBadge={handleDeleteCustomBadge}
+        onRecalculateAll={handleRecalculateAll}
+        onSaveCustomBadge={handleSaveCustomBadge}
       />
     </>
   );

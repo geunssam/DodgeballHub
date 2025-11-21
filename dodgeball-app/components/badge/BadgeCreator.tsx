@@ -1,223 +1,359 @@
 'use client';
 
-import { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
-import { BADGE_TIERS, type BadgeTier } from '@/lib/badgeSystem';
+import { Badge } from '@/components/ui/badge';
+import {
+  CONDITION_TYPES,
+  CONDITION_LABELS,
+  CONDITION_DESCRIPTIONS,
+  CONDITION_INPUT_CONFIG,
+  validateConditionData,
+  getDefaultConditionData,
+  type ConditionType,
+} from '@/lib/badgeConditions';
 import type { CustomBadge } from '@/types';
 
-// 이모지 옵션
-const EMOJI_OPTIONS = [
-  '🏆', '⚡', '🌟', '💎', '🔥', '🎯', '💪', '🤝',
-  '💚', '🍪', '🎖️', '⭐', '👑', '🦾', '🏅', '😇',
-  '💰', '🏃', '🎽', '🎨', '🎭', '🎪', '🎬', '🎤',
+// 자주 사용하는 이모지
+const FREQUENT_EMOJIS = [
+  '🏐', '🏆', '🎯', '💪', '🌟', '🔥', '⚡', '🎉',
+  '👍', '🏅', '💯', '🎊', '🌈', '✨', '🎁', '🏃'
 ];
 
-// 등급 레이블
-const TIER_LABELS = [
-  { value: BADGE_TIERS.BEGINNER, label: '입문' },
-  { value: BADGE_TIERS.SKILLED, label: '숙련' },
-  { value: BADGE_TIERS.MASTER, label: '마스터' },
-  { value: BADGE_TIERS.LEGEND, label: '레전드' },
+// 이모지 카테고리
+const EMOJI_CATEGORIES = {
+  '스포츠 & 게임': [
+    '🏐', '⚾', '🏀', '🏈', '⚽', '🎾', '🏓', '🏸',
+    '🥊', '🥋', '⛳', '🏹', '🎣', '🥅', '🥏', '🪁',
+    '🛹', '🛼', '🏏', '🏑', '🏒', '🥍', '🪃', '🎯'
+  ],
+  '감정 & 표정': [
+    '😊', '🎉', '💪', '👍', '🙌', '👏', '🤗', '😎',
+    '🤩', '🥳', '😇', '🌟', '✨', '💫', '⭐', '🌠',
+    '🔥', '⚡', '💥', '💢', '💯', '💝', '💖', '💗'
+  ],
+  '하트 & 사랑': [
+    '❤️', '💙', '💚', '💛', '🧡', '💜', '🤎', '🖤',
+    '🤍', '💖', '💗', '💓', '💞', '💕', '💟', '❣️',
+    '💔', '❤️‍🔥', '❤️‍🩹', '💘', '💝', '💌', '💋', '💑'
+  ],
+  '음식 & 간식': [
+    '🍕', '🍔', '🍟', '🌭', '🍿', '🧂', '🥓', '🥚',
+    '🍳', '🧇', '🥞', '🧈', '🍞', '🥐', '🥨', '🥯',
+    '🥖', '🧀', '🥗', '🥙', '🌮', '🌯', '🫔', '🍪'
+  ],
+  '동물': [
+    '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼',
+    '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔',
+    '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉'
+  ],
+  '자연 & 날씨': [
+    '☀️', '🌤️', '⛅', '🌥️', '☁️', '🌦️', '🌧️', '⛈️',
+    '🌩️', '🌨️', '❄️', '☃️', '⛄', '🌬️', '💨', '🌪️',
+    '🌫️', '🌈', '☔', '⚡', '⭐', '🌟', '✨', '💫'
+  ],
+  '교통 & 이동': [
+    '🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑',
+    '🚒', '🚐', '🛻', '🚚', '🚛', '🚜', '🏍️', '🛵',
+    '🚲', '🛴', '🛹', '🚁', '✈️', '🛫', '🛬', '🚀'
+  ],
+  '학용품 & 책': [
+    '📚', '📖', '📕', '📗', '📘', '📙', '📓', '📔',
+    '📒', '📃', '📜', '📄', '📰', '🗞️', '📑', '🔖',
+    '✏️', '✒️', '🖊️', '🖋️', '🖍️', '📝', '💼', '📁'
+  ],
+  '음악 & 예술': [
+    '🎵', '🎶', '🎼', '🎹', '🎸', '🎺', '🎷', '🎻',
+    '🥁', '🎤', '🎧', '🎬', '🎭', '🎨', '🖌️', '🖍️',
+    '🎪', '🎨', '🎰', '🎲', '🎯', '🎳', '🎮', '🕹️'
+  ],
+  '보석 & 장식': [
+    '💎', '💍', '💄', '👑', '👒', '🎩', '🎓', '⛑️',
+    '📿', '💄', '👓', '🕶️', '🥽', '🥼', '🦺', '👔',
+    '👕', '👖', '🧣', '🧤', '🧥', '🧦', '👗', '👘'
+  ],
+};
+
+const TIER_OPTIONS = [
+  { value: 1, label: '입문', color: 'bg-green-100 text-green-700' },
+  { value: 2, label: '숙련', color: 'bg-blue-100 text-blue-700' },
+  { value: 3, label: '마스터', color: 'bg-purple-100 text-purple-700' },
+  { value: 4, label: '레전드', color: 'bg-orange-100 text-orange-700' },
+  { value: 5, label: '특별', color: 'bg-pink-100 text-pink-700' }
 ];
 
 interface BadgeCreatorProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (badge: Omit<CustomBadge, 'id' | 'createdAt' | 'teacherId'>) => void;
+  onSave: (badge: any) => void;
+  onCancel?: () => void;
+  initialBadge?: any | null;
+  standalone?: boolean; // true: 독립 모달, false: 탭 내부
 }
 
-export function BadgeCreator({ isOpen, onClose, onSave }: BadgeCreatorProps) {
-  const [icon, setIcon] = useState<string>('🏆');
-  const [name, setName] = useState<string>('');
-  const [description, setDescription] = useState<string>('');
-  const [tier, setTier] = useState<BadgeTier>(BADGE_TIERS.BEGINNER);
+export function BadgeCreator({
+  onSave,
+  onCancel,
+  initialBadge = null,
+  standalone = true
+}: BadgeCreatorProps) {
+  const [icon, setIcon] = useState(initialBadge?.emoji || initialBadge?.icon || '🏐');
+  const [name, setName] = useState(initialBadge?.name || '');
+  const [description, setDescription] = useState(initialBadge?.description || '');
+  const [tier, setTier] = useState(initialBadge?.tier || 1);
+  const [selectedCategory, setSelectedCategory] = useState('스포츠 & 게임');
+  const [conditionType, setConditionType] = useState<ConditionType>(
+    initialBadge?.conditionType || CONDITION_TYPES.MANUAL
+  );
+  const [conditionData, setConditionData] = useState<Record<string, any> | null>(
+    initialBadge?.conditionData || null
+  );
 
-  const handleReset = () => {
-    setIcon('🏆');
-    setName('');
-    setDescription('');
-    setTier(BADGE_TIERS.BEGINNER);
-  };
-
-  const handleClose = () => {
-    handleReset();
-    onClose();
-  };
+  // 조건 타입 변경 시 기본 데이터 설정
+  useEffect(() => {
+    if (conditionType === CONDITION_TYPES.MANUAL) {
+      setConditionData(null);
+    } else {
+      const defaultData = getDefaultConditionData(conditionType);
+      setConditionData(defaultData);
+    }
+  }, [conditionType]);
 
   const handleSave = () => {
-    if (!name.trim() || !description.trim()) {
-      alert('배지 이름과 설명을 입력해주세요.');
+    if (!name.trim()) {
+      alert('배지 이름을 입력하세요.');
       return;
     }
 
-    onSave({
-      name: name.trim(),
-      emoji: icon,
-      description: description.trim(),
-    });
-
-    handleReset();
-    onClose();
-  };
-
-  const getTierLabel = (tierValue: BadgeTier): string => {
-    return TIER_LABELS.find(t => t.value === tierValue)?.label || '입문';
-  };
-
-  const getTierColor = (tierValue: BadgeTier): string => {
-    switch (tierValue) {
-      case BADGE_TIERS.BEGINNER:
-        return 'bg-green-100 text-green-700 border-green-300';
-      case BADGE_TIERS.SKILLED:
-        return 'bg-blue-100 text-blue-700 border-blue-300';
-      case BADGE_TIERS.MASTER:
-        return 'bg-purple-100 text-purple-700 border-purple-300';
-      case BADGE_TIERS.LEGEND:
-        return 'bg-orange-100 text-orange-700 border-orange-300';
-      default:
-        return 'bg-gray-100 text-gray-700 border-gray-300';
+    // 조건 데이터 검증
+    if (conditionType !== CONDITION_TYPES.MANUAL) {
+      const validation = validateConditionData(conditionType, conditionData || {});
+      if (!validation.valid) {
+        alert(validation.error);
+        return;
+      }
     }
+
+    const badge = {
+      id: initialBadge?.id || `custom-${Date.now()}`,
+      emoji: icon,
+      icon: icon, // 하위 호환
+      name: name.trim(),
+      description: description.trim(),
+      tier,
+      conditionType: conditionType,
+      conditionData: conditionType === CONDITION_TYPES.MANUAL ? null : conditionData,
+      isCustom: initialBadge?.isCustom ?? true,
+      createdAt: initialBadge?.createdAt || new Date().toISOString(),
+      teacherId: initialBadge?.teacherId,
+    };
+
+    onSave(badge);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>커스텀 배지 만들기</DialogTitle>
-          <DialogDescription>
-            특별한 성취를 위한 나만의 배지를 만들어보세요
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          {/* 아이콘 선택 */}
-          <div className="space-y-2">
-            <Label>아이콘 선택</Label>
-            <div className="grid grid-cols-8 gap-2">
-              {EMOJI_OPTIONS.map((emoji) => (
-                <button
-                  key={emoji}
-                  type="button"
-                  onClick={() => setIcon(emoji)}
-                  className={cn(
-                    'w-10 h-10 text-2xl rounded border transition-all',
-                    icon === emoji
-                      ? 'border-primary bg-primary/10 scale-110'
-                      : 'border-muted hover:border-primary/50 hover:bg-accent'
-                  )}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 배지 이름 */}
-          <div className="space-y-2">
-            <Label htmlFor="name">배지 이름</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="예: 슈퍼스타"
-              maxLength={20}
-            />
-            <p className="text-xs text-muted-foreground">
-              {name.length}/20자
-            </p>
-          </div>
-
-          {/* 설명 */}
-          <div className="space-y-2">
-            <Label htmlFor="description">설명</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="배지 설명을 입력하세요"
-              rows={3}
-              maxLength={100}
-            />
-            <p className="text-xs text-muted-foreground">
-              {description.length}/100자
-            </p>
-          </div>
-
-          {/* 등급 선택 */}
-          <div className="space-y-2">
-            <Label>등급 선택</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {TIER_LABELS.map((t) => (
-                <button
-                  key={t.value}
-                  type="button"
-                  onClick={() => setTier(t.value)}
-                  className={cn(
-                    'py-2 px-4 rounded border font-medium transition-all',
-                    tier === t.value
-                      ? 'border-primary bg-primary/10'
-                      : 'border-muted hover:border-primary/50 hover:bg-accent'
-                  )}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 미리보기 */}
-          <div className="space-y-2">
-            <Label>미리보기</Label>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <span className="text-4xl">{icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-lg truncate">
-                      {name || '배지 이름'}
-                    </div>
-                    <div className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                      {description || '배지 설명이 여기 표시됩니다'}
-                    </div>
-                    <Badge
-                      variant="outline"
-                      className={cn('mt-2', getTierColor(tier))}
-                    >
-                      {getTierLabel(tier)}
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+    <div className="space-y-6">
+      {/* 이모지 선택 */}
+      <div>
+        <Label>이모지 선택</Label>
+        <div className="flex gap-2 mb-4 mt-2">
+          <Input
+            value={icon}
+            onChange={(e) => setIcon(e.target.value)}
+            placeholder="이모지 입력"
+            maxLength={2}
+            className="w-24 text-2xl text-center"
+          />
+          <div className="text-sm text-muted-foreground flex items-center">
+            직접 입력하거나 아래에서 선택
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={handleClose}>
+        {/* 자주 사용 */}
+        <div className="mb-4">
+          <p className="text-sm text-muted-foreground mb-2">자주 사용:</p>
+          <div className="grid grid-cols-8 gap-2">
+            {FREQUENT_EMOJIS.map((emoji, idx) => (
+              <button
+                key={`freq-${idx}`}
+                onClick={() => setIcon(emoji)}
+                className={`text-3xl p-2 rounded hover:bg-accent transition-colors ${
+                  icon === emoji ? 'ring-2 ring-primary bg-accent' : ''
+                }`}
+                type="button"
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 카테고리별 */}
+        <div>
+          <p className="text-sm text-muted-foreground mb-2">카테고리별:</p>
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="w-full p-2 border rounded mb-2"
+          >
+            {Object.keys(EMOJI_CATEGORIES).map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+          <div className="grid grid-cols-8 gap-2 max-h-48 overflow-y-auto p-2 border rounded bg-gray-50">
+            {EMOJI_CATEGORIES[selectedCategory as keyof typeof EMOJI_CATEGORIES].map((emoji, idx) => (
+              <button
+                key={`cat-${idx}`}
+                onClick={() => setIcon(emoji)}
+                className={`text-3xl p-2 rounded hover:bg-accent transition-colors ${
+                  icon === emoji ? 'ring-2 ring-primary bg-accent' : ''
+                }`}
+                type="button"
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 배지 정보 */}
+      <div>
+        <Label htmlFor="badge-name">배지 이름</Label>
+        <Input
+          id="badge-name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="예: 팀워크의 달인"
+          maxLength={20}
+          className="mt-1"
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          {name.length}/20자
+        </p>
+      </div>
+
+      <div>
+        <Label>배지 등급</Label>
+        <div className="grid grid-cols-5 gap-2 mt-2">
+          {TIER_OPTIONS.map(option => (
+            <button
+              key={option.value}
+              onClick={() => setTier(option.value)}
+              className={`p-3 rounded-lg font-semibold transition-all border-2 ${option.color} ${
+                tier === option.value ? 'ring-2 ring-primary shadow-md border-primary' : 'border-transparent hover:shadow-sm'
+              }`}
+              type="button"
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <Label htmlFor="badge-desc">배지 설명</Label>
+        <Textarea
+          id="badge-desc"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="예: 팀원들과 협력을 잘했어요"
+          maxLength={100}
+          rows={3}
+          className="mt-1"
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          {description.length}/100자
+        </p>
+      </div>
+
+      {/* 자동 수여 조건 설정 */}
+      <div>
+        <Label htmlFor="condition-type">자동 수여 조건</Label>
+        <select
+          id="condition-type"
+          value={conditionType}
+          onChange={(e) => setConditionType(e.target.value as ConditionType)}
+          className="w-full p-2 border rounded mt-1"
+        >
+          {Object.entries(CONDITION_LABELS).map(([key, label]) => (
+            <option key={key} value={key}>
+              {label}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-muted-foreground mt-1">
+          {CONDITION_DESCRIPTIONS[conditionType]}
+        </p>
+
+        {/* 조건 값 입력 필드 */}
+        {conditionType !== CONDITION_TYPES.MANUAL && CONDITION_INPUT_CONFIG[conditionType] && (
+          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <Label htmlFor="condition-value">
+              {CONDITION_INPUT_CONFIG[conditionType]!.label}
+            </Label>
+            <div className="flex gap-2 items-center mt-1">
+              <Input
+                id="condition-value"
+                type={CONDITION_INPUT_CONFIG[conditionType]!.type}
+                min={CONDITION_INPUT_CONFIG[conditionType]!.min}
+                max={CONDITION_INPUT_CONFIG[conditionType]!.max}
+                step={CONDITION_INPUT_CONFIG[conditionType]!.step}
+                placeholder={CONDITION_INPUT_CONFIG[conditionType]!.placeholder}
+                value={conditionData?.[CONDITION_INPUT_CONFIG[conditionType]!.field] || ''}
+                onChange={(e) => setConditionData({
+                  ...conditionData,
+                  [CONDITION_INPUT_CONFIG[conditionType]!.field]: e.target.value
+                })}
+                className="flex-1"
+              />
+              {CONDITION_INPUT_CONFIG[conditionType]!.suffix && (
+                <span className="text-sm text-gray-600">
+                  {CONDITION_INPUT_CONFIG[conditionType]!.suffix}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 미리보기 */}
+      <div>
+        <Label>미리보기</Label>
+        <Card className="w-48 mx-auto mt-2">
+          <CardContent className="p-4">
+            <div className="text-5xl text-center mb-3">{icon}</div>
+            <h3 className="text-sm font-semibold text-center truncate">
+              {name || '배지 이름'}
+            </h3>
+            <p className="text-xs text-muted-foreground text-center mt-2 line-clamp-2">
+              {description || '배지 설명'}
+            </p>
+            <div className="flex justify-center mt-3">
+              <Badge
+                variant="outline"
+                className={TIER_OPTIONS.find(t => t.value === tier)?.color || 'bg-gray-100'}
+              >
+                {TIER_OPTIONS.find(t => t.value === tier)?.label || '입문'}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 버튼 */}
+      <div className="flex justify-end gap-2">
+        {onCancel && (
+          <Button variant="outline" onClick={onCancel} type="button">
             취소
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={!name.trim() || !description.trim()}
-          >
-            저장
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        )}
+        <Button onClick={handleSave} type="button">
+          {initialBadge ? '수정 완료' : '배지 만들기'}
+        </Button>
+      </div>
+    </div>
   );
 }
