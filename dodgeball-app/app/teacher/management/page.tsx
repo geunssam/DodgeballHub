@@ -15,6 +15,7 @@ import { randomTeamAssignment, assignTeamColor } from '@/lib/teamUtils';
 import { Class, Student, Team } from '@/types';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { calculateClassStats, calculateTeamStats } from '@/lib/statsHelpers';
+import { STORAGE_KEYS } from '@/lib/mockData';
 
 export default function ManagementPage() {
   const router = useRouter();
@@ -28,7 +29,7 @@ export default function ManagementPage() {
   // 페이지네이션
   const [classesPage, setClassesPage] = useState(0);
   const [teamsPage, setTeamsPage] = useState(0);
-  const itemsPerPage = 4;
+  const itemsPerPage = 3;
 
   // 선택된 학급/팀
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
@@ -78,6 +79,7 @@ export default function ManagementPage() {
       setLoading(false);
     }
   };
+
 
   const handleRenameClass = async (classId: string, newName: string) => {
     try {
@@ -336,8 +338,8 @@ export default function ManagementPage() {
 
               {/* 학급 카드 리스트 (상단) */}
               <div className="relative">
-                {/* 학급 카드 그리드 (최대 4개) */}
-                <div className="grid grid-cols-4 gap-2 px-12">
+                {/* 학급 카드 그리드 (최대 3개) */}
+                <div className="grid grid-cols-3 gap-4 px-12">
                   {paginatedClasses.map((classItem) => {
                     const students = studentsByClass[classItem.id] || [];
                     const classStats = calculateClassStats(students);
@@ -471,8 +473,8 @@ export default function ManagementPage() {
 
               {/* 팀 카드 리스트 (상단) */}
               <div className="relative">
-                {/* 팀 카드 그리드 (최대 4개) */}
-                <div className="grid grid-cols-4 gap-2 px-12">
+                {/* 팀 카드 그리드 (최대 3개) */}
+                <div className="grid grid-cols-3 gap-4 px-12">
                   {paginatedTeams.map((team) => {
                     const teamMembers = team.members || [];
                     const teamStats = calculateTeamStats(team, allStudents);

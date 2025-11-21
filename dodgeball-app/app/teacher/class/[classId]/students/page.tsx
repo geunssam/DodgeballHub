@@ -84,7 +84,7 @@ export default function StudentsPage() {
         classNumber: parseInt(classData.name.split(' ')[1]?.replace('반', '') || '1'),
         accessCode,
         stats: {
-          outs: 0,
+          hits: 0,
           passes: 0,
           sacrifices: 0,
           cookies: 0,
@@ -162,7 +162,7 @@ export default function StudentsPage() {
           classNumber: parseInt(classData.name.split(' ')[1]?.replace('반', '') || '1'),
           accessCode,
           stats: {
-            outs: 0,
+            hits: 0,
             passes: 0,
             sacrifices: 0,
             cookies: 0,
@@ -304,7 +304,7 @@ ${gradePart},${classPart},10,오태양`;
           classNumber: parseInt(classData.name.split(' ')[1]?.replace('반', '') || '1'),
           accessCode,
           stats: {
-            outs: 0,
+            hits: 0,
             passes: 0,
             sacrifices: 0,
             cookies: 0,

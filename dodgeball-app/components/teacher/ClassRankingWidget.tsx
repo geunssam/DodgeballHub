@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { ClassRankingData } from '@/types';
-import { calculateAllClassStats } from '@/lib/classStatsCalculator';
-import { getCurrentTeacherId } from '@/lib/dataService';
+import { getClasses, getStudents, getCurrentTeacherId } from '@/lib/dataService';
+import { calculateClassStats } from '@/lib/statsHelpers';
 
 interface ClassRankingWidgetProps {
   onClassClick?: (classData: ClassRankingData) => void;
@@ -34,27 +34,34 @@ export function ClassRankingWidget({ onClassClick }: ClassRankingWidgetProps) {
         return;
       }
 
-      // calculateAllClassStats 사용하여 학급별 통계 가져오기
-      const classStatsMap = await calculateAllClassStats(teacherId);
+      // 모든 학급과 학생 데이터 가져오기
+      const classes = await getClasses(teacherId);
 
-      // ClassRankingData 형식으로 변환
-      const classRankings: ClassRankingData[] = Object.entries(classStatsMap).map(
-        ([className, stats]) => ({
-          className,
-          totalPoints: stats.totalOuts + stats.totalPasses + stats.totalSacrifices + stats.totalCookies,
+      const classRankings: ClassRankingData[] = [];
+
+      // 각 학급별로 학생 데이터를 가져와서 통계 계산
+      for (const cls of classes) {
+        const students = await getStudents(cls.id);
+
+        // statsHelpers의 calculateClassStats 사용
+        const stats = calculateClassStats(students);
+
+        classRankings.push({
+          className: cls.name,
+          totalPoints: stats.totalHits + stats.totalPasses + stats.totalSacrifices + stats.totalCookies,
           avgPoints: stats.studentCount > 0
             ? Math.round(
-                (stats.totalOuts + stats.totalPasses + stats.totalSacrifices + stats.totalCookies) /
+                (stats.totalHits + stats.totalPasses + stats.totalSacrifices + stats.totalCookies) /
                   stats.studentCount
               )
             : 0,
           studentCount: stats.studentCount,
-          totalOuts: stats.totalOuts,
+          totalOuts: stats.totalHits,
           totalPasses: stats.totalPasses,
           totalSacrifices: stats.totalSacrifices,
           totalCookies: stats.totalCookies
-        })
-      );
+        });
+      }
 
       // 총점 기준 내림차순 정렬
       classRankings.sort((a, b) => b.totalPoints - a.totalPoints);
@@ -179,7 +186,7 @@ export function ClassRankingWidget({ onClassClick }: ClassRankingWidgetProps) {
           </div>
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 py-3 px-4 rounded-lg flex items-center justify-center gap-2">
             <div className="text-3xl">🏃</div>
-            <div className="text-base font-semibold text-blue-800">통과</div>
+            <div className="text-base font-semibold text-blue-800">패스</div>
             <div className="text-xl font-bold text-blue-800">{classData.totalPasses}</div>
           </div>
           <div className="bg-gradient-to-br from-purple-50 to-purple-100 py-3 px-4 rounded-lg flex items-center justify-center gap-2">
@@ -253,7 +260,7 @@ export function ClassRankingWidget({ onClassClick }: ClassRankingWidgetProps) {
                     </div>
                     <div className="bg-gradient-to-br from-blue-50 to-blue-100 py-4 px-6 rounded-xl flex items-center justify-center gap-2.5 flex-1">
                       <div className="text-3xl">🏃</div>
-                      <div className="text-lg font-semibold text-blue-800">통과</div>
+                      <div className="text-lg font-semibold text-blue-800">패스</div>
                       <div className="text-2xl font-bold text-blue-800">{classData.totalPasses || 0}</div>
                     </div>
                     <div className="bg-gradient-to-br from-purple-50 to-purple-100 py-4 px-6 rounded-xl flex items-center justify-center gap-2.5 flex-1">

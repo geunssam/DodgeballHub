@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getClasses, deleteClass, getGamesByTeacherId, deleteGame, getStudents, updateClass, getTeams } from '@/lib/dataService';
+import { getClasses, deleteClass, getGamesByTeacherId, deleteGame, getStudents, updateClass, getTeams, migrateStudentStatsFields } from '@/lib/dataService';
 import { STORAGE_KEYS } from '@/lib/mockData';
 import { Class, Game, Student, Team, FinishedGame } from '@/types';
 import { ClassCard } from '@/components/teacher/ClassCard';
@@ -15,15 +15,19 @@ import { QuickGameModal } from '@/components/teacher/QuickGameModal';
 import { SelectedGamesModal } from '@/components/teacher/SelectedGamesModal';
 import StatsView from '@/components/teacher/StatsView';
 import BadgeCollection from '@/components/badge/BadgeCollection';
+import { ClassRankingWidget } from '@/components/teacher/ClassRankingWidget';
+import { ClassDetailRankingModal } from '@/components/teacher/ClassDetailRankingModal';
+import { ClassRankingData } from '@/types';
 
 export default function TeacherDashboardPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [classes, setClasses] = useState<Class[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dashboardView, setDashboardView] = useState<'dashboard' | 'classes' | 'games' | 'stats' | 'badges'>('dashboard');
+  const [dashboardView, setDashboardView] = useState<'dashboard' | 'classes' | 'games' | 'stats' | 'badges' | 'rankings'>('dashboard');
   const [teacherId, setTeacherId] = useState<string>('');
 
   // 모달 상태
@@ -37,11 +41,18 @@ export default function TeacherDashboardPage() {
   // 통계 뷰 상태
   const [selectedGameIds, setSelectedGameIds] = useState<string[]>([]);
 
+  // 랭킹 모달 상태
+  const [selectedClass, setSelectedClass] = useState<ClassRankingData | null>(null);
+  const [isRankingModalOpen, setIsRankingModalOpen] = useState(false);
+
   // 페이지네이션 상태
   const [classesPage, setClassesPage] = useState(0);
   const classesPerPage = 4;
 
   useEffect(() => {
+    // 데이터 마이그레이션 실행 (앱 시작 시 한 번만)
+    migrateStudentStatsFields();
+
     // 로그인 체크
     const currentTeacherId = localStorage.getItem(STORAGE_KEYS.CURRENT_TEACHER);
     if (!currentTeacherId) {
@@ -55,14 +66,22 @@ export default function TeacherDashboardPage() {
     loadClasses(currentTeacherId);
     loadGames(currentTeacherId);
     loadTeams(currentTeacherId);
-
-    // sessionStorage에서 대시보드 뷰 상태 확인
-    const savedView = sessionStorage.getItem('dashboardView');
-    if (savedView === 'games') {
-      setDashboardView('games');
-      sessionStorage.removeItem('dashboardView'); // 한 번 사용 후 제거
-    }
   }, [router]);
+
+  // URL 쿼리 파라미터 처리를 위한 별도 useEffect
+  useEffect(() => {
+    const view = searchParams.get('view');
+    if (view === 'rankings') {
+      setDashboardView('rankings');
+    } else {
+      // sessionStorage에서 대시보드 뷰 상태 확인
+      const savedView = sessionStorage.getItem('dashboardView');
+      if (savedView === 'games') {
+        setDashboardView('games');
+        sessionStorage.removeItem('dashboardView'); // 한 번 사용 후 제거
+      }
+    }
+  }, [searchParams]);
 
   const loadClasses = async (teacherId: string) => {
     try {
@@ -183,6 +202,16 @@ export default function TeacherDashboardPage() {
     }
   };
 
+  const handleClassClick = (classData: ClassRankingData) => {
+    setSelectedClass(classData);
+    setIsRankingModalOpen(true);
+  };
+
+  const handleCloseRankingModal = () => {
+    setIsRankingModalOpen(false);
+    setSelectedClass(null);
+  };
+
 
   if (loading) {
     return (
@@ -194,12 +223,12 @@ export default function TeacherDashboardPage() {
 
   return (
     <div
-      className={(dashboardView === 'dashboard' || dashboardView === 'badges') ? 'bg-background flex flex-col overflow-hidden h-full' : 'min-h-screen bg-background flex flex-col pt-16'}
+      className={(dashboardView === 'dashboard' || dashboardView === 'badges' || dashboardView === 'rankings') ? 'bg-background flex flex-col overflow-hidden h-full' : 'min-h-screen bg-background flex flex-col pt-16'}
     >
       {/* 메인 콘텐츠 */}
       <main className={`w-full mx-auto ${dashboardView === 'dashboard'
         ? 'h-full flex items-center justify-center overflow-hidden px-6'
-        : dashboardView === 'badges'
+        : dashboardView === 'badges' || dashboardView === 'rankings'
           ? 'h-full overflow-hidden px-6 sm:px-8 py-8 max-w-7xl'
           : 'flex-grow py-8 max-w-7xl overflow-y-auto px-6 sm:px-8'
         }`}>
@@ -604,9 +633,49 @@ export default function TeacherDashboardPage() {
             onBack={() => setDashboardView('dashboard')}
           />
         )}
+
+        {/* 학급 랭킹 뷰 */}
+        {dashboardView === 'rankings' && (
+          <div className="w-full max-w-full h-full flex flex-col bg-background min-h-0">
+            {/* 헤더 영역 (BadgeCollection 스타일) */}
+            <div className="border-b bg-card px-6 py-5 flex-shrink-0">
+              <div className="flex items-center justify-between">
+                {/* 좌측: 대시보드 버튼 */}
+                <button
+                  onClick={() => setDashboardView('dashboard')}
+                  className="flex items-center gap-2 px-4 py-2 bg-sky-100 hover:bg-sky-200 text-sky-700 font-medium rounded-full transition-all duration-200 shadow-sm hover:shadow-md flex-shrink-0"
+                >
+                  <span>←</span>
+                  <span>대시보드</span>
+                </button>
+
+                {/* 중앙: 제목 */}
+                <div className="absolute left-1/2 transform -translate-x-1/2">
+                  <h1 className="text-2xl font-bold">🏅 학급 랭킹</h1>
+                </div>
+
+                {/* 우측 여백 (대칭을 위한) */}
+                <div className="w-[120px]"></div>
+              </div>
+            </div>
+
+            {/* 랭킹 컨텐츠 */}
+            <div className="flex-1 overflow-y-auto px-6 py-6">
+              <ClassRankingWidget onClassClick={handleClassClick} />
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Modals */}
+      {selectedClass && (
+        <ClassDetailRankingModal
+          classData={selectedClass}
+          isOpen={isRankingModalOpen}
+          onClose={handleCloseRankingModal}
+        />
+      )}
+
       <GameModeSelectModal
         isOpen={showGameModeModal}
         onClose={() => setShowGameModeModal(false)}

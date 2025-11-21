@@ -354,7 +354,7 @@ export default function GamePlayPage() {
         if (!record) continue;
 
         const newStats = {
-          outs: updatedStudent.stats.outs + record.outs,
+          hits: updatedStudent.stats.hits + record.hits,
           passes: updatedStudent.stats.passes + record.passes,
           sacrifices: updatedStudent.stats.sacrifices + record.sacrifices,
           cookies: updatedStudent.stats.cookies + record.cookies,
@@ -363,7 +363,7 @@ export default function GamePlayPage() {
         };
 
         // 누적 총점 계산
-        newStats.totalScore = newStats.outs + newStats.passes + newStats.sacrifices + newStats.cookies;
+        newStats.totalScore = newStats.hits + newStats.passes + newStats.sacrifices + newStats.cookies;
 
         await updateStudent(studentId, { stats: newStats });
       }
@@ -376,7 +376,7 @@ export default function GamePlayPage() {
         finalScores: gameData.teams.reduce((acc, team) => {
           const teamScore = gameData.records
             .filter(r => team.members.some(m => m.studentId === r.studentId))
-            .reduce((sum, r) => sum + r.outs + r.passes + r.sacrifices + r.cookies, 0);
+            .reduce((sum, r) => sum + r.hits + r.passes + r.sacrifices + r.cookies, 0);
           acc[team.teamId] = teamScore;
           return acc;
         }, {} as { [teamId: string]: number }),

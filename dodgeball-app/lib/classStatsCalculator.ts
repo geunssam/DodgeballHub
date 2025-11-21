@@ -13,7 +13,7 @@ import { getPlayerHistory } from './dataService';
  * 학급별 통계 인터페이스
  */
 interface ClassStats {
-  totalHits: number;
+  totalOuts: number;
   totalPasses: number;
   totalSacrifices: number;
   totalCookies: number;
@@ -93,7 +93,7 @@ export const calculateAllClassStats = async (
 
       // 학급별 집계
       const classStats: ClassStats = {
-        totalHits: 0,
+        totalOuts: 0,
         totalPasses: 0,
         totalSacrifices: 0,
         totalCookies: 0,
@@ -101,7 +101,7 @@ export const calculateAllClassStats = async (
       };
 
       results.forEach(stats => {
-        classStats.totalHits += stats.hits;
+        classStats.totalOuts += stats.hits;
         classStats.totalPasses += stats.passes;
         classStats.totalSacrifices += stats.sacrifices;
         classStats.totalCookies += stats.cookies;
@@ -138,7 +138,7 @@ export const calculateClassStats = async (
 ): Promise<ClassStats> => {
   const allStats = await calculateAllClassStats(teacherId);
   return allStats[className] || {
-    totalHits: 0,
+    totalOuts: 0,
     totalPasses: 0,
     totalSacrifices: 0,
     totalCookies: 0,

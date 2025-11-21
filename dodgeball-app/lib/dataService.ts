@@ -14,6 +14,63 @@ export function getCurrentTeacherId(): string | null {
   return localStorage.getItem(STORAGE_KEYS.CURRENT_TEACHER);
 }
 
+// ===== Data Migration =====
+/**
+ * 데이터 마이그레이션: outs → hits 필드명 변경
+ * 앱 시작 시 한 번만 실행됨
+ */
+export function migrateStudentStatsFields(): void {
+  if (typeof window === 'undefined') return;
+
+  const MIGRATION_KEY = 'dodgeball_migration_outs_to_hits';
+
+  // 이미 마이그레이션 완료된 경우 스킵
+  if (localStorage.getItem(MIGRATION_KEY) === 'completed') {
+    return;
+  }
+
+  console.log('🔄 학생 stats 필드 마이그레이션 시작...');
+
+  const students = getFromStorage<Student>(STORAGE_KEYS.STUDENTS);
+  let migratedCount = 0;
+
+  console.log(`📊 전체 학생 수: ${students.length}명`);
+  if (students.length > 0) {
+    console.log('📋 첫 번째 학생 stats:', students[0].stats);
+    console.log('🔍 outs 필드 존재?', 'outs' in (students[0].stats || {}));
+    console.log('🔍 hits 필드 존재?', 'hits' in (students[0].stats || {}));
+  }
+
+  const migratedStudents = students.map(student => {
+    if (student.stats && 'outs' in student.stats && !('hits' in student.stats)) {
+      migratedCount++;
+      console.log(`✏️ 마이그레이션: ${student.name} - outs: ${(student.stats as any).outs}`);
+      return {
+        ...student,
+        stats: {
+          hits: (student.stats as any).outs || 0,
+          passes: student.stats.passes || 0,
+          sacrifices: student.stats.sacrifices || 0,
+          cookies: student.stats.cookies || 0,
+          gamesPlayed: student.stats.gamesPlayed || 0,
+          totalScore: student.stats.totalScore || 0
+        }
+      };
+    }
+    return student;
+  });
+
+  if (migratedCount > 0) {
+    saveToStorage(STORAGE_KEYS.STUDENTS, migratedStudents);
+    console.log(`✅ 학생 stats 필드 마이그레이션 완료: ${migratedCount}명`);
+  } else {
+    console.log('✅ 마이그레이션 대상 없음 (이미 최신 버전)');
+  }
+
+  // 마이그레이션 완료 플래그 저장
+  localStorage.setItem(MIGRATION_KEY, 'completed');
+}
+
 // ===== Helper Functions =====
 function getFromStorage<T>(key: string): T[] {
   if (typeof window === 'undefined') return [];
