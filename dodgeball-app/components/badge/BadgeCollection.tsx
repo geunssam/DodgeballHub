@@ -94,7 +94,7 @@ const BadgeCard: React.FC<BadgeCardProps> = ({ badge, acquiredCount, totalStuden
           </div>
           <div className="w-full bg-muted rounded-full h-2">
             <div
-              className={`h-2 rounded-full ${isAcquired ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+              className={`h-2 rounded-full ${isAcquired ? 'bg-blue-400/30' : 'bg-muted-foreground/30'}`}
               style={{ width: `${completionRate}%` }}
             />
           </div>
