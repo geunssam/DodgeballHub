@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,19 +11,21 @@ import { Student } from '@/types';
 import { isValidStudentCode } from '@/lib/studentCodeGenerator';
 
 export default function StudentPage() {
-  const searchParams = useSearchParams();
-  const codeFromUrl = searchParams.get('code');
-
   const [code, setCode] = useState('');
   const [student, setStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(false);
 
   // URL 파라미터로 코드가 전달된 경우 자동 로그인 시도
   useEffect(() => {
-    if (codeFromUrl) {
-      handleSubmitWithCode(codeFromUrl);
+    // 클라이언트 사이드에서만 실행
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const codeFromUrl = params.get('code');
+      if (codeFromUrl) {
+        handleSubmitWithCode(codeFromUrl);
+      }
     }
-  }, [codeFromUrl]);
+  }, []);
 
   // 코드로 학생 찾기 (studentCode 우선, 없으면 accessCode)
   const findStudentByCode = async (inputCode: string): Promise<Student | null> => {

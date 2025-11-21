@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,7 +21,6 @@ import { ClassRankingData } from '@/types';
 
 export default function TeacherDashboardPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [classes, setClasses] = useState<Class[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -70,18 +69,22 @@ export default function TeacherDashboardPage() {
 
   // URL 쿼리 파라미터 처리를 위한 별도 useEffect
   useEffect(() => {
-    const view = searchParams.get('view');
-    if (view === 'rankings') {
-      setDashboardView('rankings');
-    } else {
-      // sessionStorage에서 대시보드 뷰 상태 확인
-      const savedView = sessionStorage.getItem('dashboardView');
-      if (savedView === 'games') {
-        setDashboardView('games');
-        sessionStorage.removeItem('dashboardView'); // 한 번 사용 후 제거
+    // 클라이언트 사이드에서만 실행
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const view = params.get('view');
+      if (view === 'rankings') {
+        setDashboardView('rankings');
+      } else {
+        // sessionStorage에서 대시보드 뷰 상태 확인
+        const savedView = sessionStorage.getItem('dashboardView');
+        if (savedView === 'games') {
+          setDashboardView('games');
+          sessionStorage.removeItem('dashboardView'); // 한 번 사용 후 제거
+        }
       }
     }
-  }, [searchParams]);
+  }, []);
 
   const loadClasses = async (teacherId: string) => {
     try {
