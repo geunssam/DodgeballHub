@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors, closestCenter } from '@dnd-kit/core';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getClassById, getStudents, getTeams, createTeam, updateTeam, deleteTeam, updateStudent, getClasses } from '@/lib/dataService';
 import { Class, Student, Team } from '@/types';
-import { STORAGE_KEYS } from '@/lib/mockData';
 import { StudentCard } from '@/components/StudentCard';
 import { TeamDropZone } from '@/components/TeamDropZone';
 import { RandomTeamModal } from '@/components/RandomTeamModal';
@@ -21,6 +21,7 @@ import { randomTeamAssignment, generateTeamName, assignTeamColor, TeamNamingStyl
 
 export default function TeamsPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const params = useParams();
   const classId = params.classId as string;
 
@@ -57,16 +58,22 @@ export default function TeamsPage() {
 
   useEffect(() => {
     loadData();
-  }, [classId]);
+  }, [classId, session, status]);
 
   const loadData = async () => {
     try {
-      // 현재 선생님 ID 가져오기
-      const currentTeacherId = localStorage.getItem(STORAGE_KEYS.CURRENT_TEACHER);
-      if (!currentTeacherId) {
+      // 세션 로딩 중이면 대기
+      if (status === 'loading') {
+        return;
+      }
+
+      // 로그인 체크
+      if (status === 'unauthenticated' || !session?.user?.id) {
         router.push('/teacher/login');
         return;
       }
+
+      const currentTeacherId = session.user.id;
 
       const [classInfo, students, teamList, allClasses] = await Promise.all([
         getClassById(classId),

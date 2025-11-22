@@ -17,6 +17,7 @@ interface ClassDetailModalProps {
   classData: Class | null;
   students: Student[];
   onRandomTeamGeneration?: () => void;
+  onAddStudents?: () => void;
 }
 
 /**
@@ -29,7 +30,8 @@ export function ClassDetailModal({
   onClose,
   classData,
   students,
-  onRandomTeamGeneration
+  onRandomTeamGeneration,
+  onAddStudents
 }: ClassDetailModalProps) {
   if (!classData) return null;
 
@@ -45,15 +47,26 @@ export function ClassDetailModal({
             <DialogTitle className="text-2xl font-bold">
               {classData.name} 학생 목록
             </DialogTitle>
-            {onRandomTeamGeneration && (
-              <Button
-                onClick={onRandomTeamGeneration}
-                className="bg-green-500 hover:bg-green-600 text-white font-bold"
-                size="sm"
-              >
-                🎲 랜덤 팀 생성 (2팀)
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {onAddStudents && (
+                <Button
+                  onClick={onAddStudents}
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-bold"
+                  size="sm"
+                >
+                  👤 학생 추가
+                </Button>
+              )}
+              {onRandomTeamGeneration && (
+                <Button
+                  onClick={onRandomTeamGeneration}
+                  className="bg-green-500 hover:bg-green-600 text-white font-bold"
+                  size="sm"
+                >
+                  🎲 랜덤 팀 생성 (2팀)
+                </Button>
+              )}
+            </div>
           </div>
         </DialogHeader>
 

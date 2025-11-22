@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Settings } from 'lucide-react';
-import { STORAGE_KEYS } from '@/lib/mockData';
 import { GameSettingsModal } from '@/components/teacher/GameSettingsModal';
 import { StudentCodeListModal } from '@/components/teacher/StudentCodeListModal';
 import { BadgeManagementModal } from '@/components/badge/BadgeManagementModal';
-import { getCurrentTeacherId, getClasses, getStudents } from '@/lib/dataService';
+import { getClasses, getStudents } from '@/lib/dataService';
 import {
   loadCustomBadges,
   loadHiddenBadges,
@@ -23,13 +23,13 @@ import { toast } from 'sonner';
 
 export function NavBar() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [showSettings, setShowSettings] = useState(false);
   const [showStudentCodeModal, setShowStudentCodeModal] = useState(false);
   const [showBadgeManagement, setShowBadgeManagement] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState<Date | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
-  const [teacherId, setTeacherId] = useState<string>('');
   const [customBadges, setCustomBadges] = useState<CustomBadge[]>([]);
   const [hiddenBadgeIds, setHiddenBadgeIds] = useState<string[]>([]);
 
@@ -46,12 +46,9 @@ export function NavBar() {
   // 모든 학급의 학생 데이터 및 배지 데이터 로드
   useEffect(() => {
     const loadAllData = async () => {
-      const currentTeacherId = getCurrentTeacherId();
-      if (!currentTeacherId) return;
+      if (!session?.user?.id) return;
 
-      setTeacherId(currentTeacherId);
-
-      const classes = await getClasses(currentTeacherId);
+      const classes = await getClasses(session.user.id);
       const students: Student[] = [];
 
       for (const cls of classes) {
@@ -66,14 +63,16 @@ export function NavBar() {
       setHiddenBadgeIds(loadHiddenBadges());
     };
 
-    if (isMounted) {
+    if (isMounted && session?.user?.id) {
       loadAllData();
     }
-  }, [isMounted]);
+  }, [isMounted, session?.user?.id]);
 
   // 학생 데이터 새로고침
   const handleRefreshStudents = async () => {
-    const classes = await getClasses(teacherId);
+    if (!session?.user?.id) return;
+
+    const classes = await getClasses(session.user.id);
     const students: Student[] = [];
 
     for (const cls of classes) {
@@ -84,9 +83,8 @@ export function NavBar() {
     setAllStudents(students);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem(STORAGE_KEYS.CURRENT_TEACHER);
-    router.push('/teacher/login');
+  const handleLogout = async () => {
+    await signOut({ callbackUrl: '/teacher/login' });
   };
 
   // 배지 관리 핸들러들
@@ -231,7 +229,7 @@ export function NavBar() {
         isOpen={showStudentCodeModal}
         onClose={() => setShowStudentCodeModal(false)}
         students={allStudents}
-        teacherId={teacherId}
+        teacherId={session?.user?.id || ''}
         onRefresh={handleRefreshStudents}
       />
 

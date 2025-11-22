@@ -1,87 +1,25 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { STORAGE_KEYS, initializeMockData } from '@/lib/mockData';
 
 export default function TeacherLoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState('teacher@school.com');
-  const [password, setPassword] = useState('password');
-  const [error, setError] = useState('');
-
-  const handleLogin = () => {
-    // Mock Data 초기화
-    initializeMockData();
-
-    // Mock 로그인 (Phase 4에서 Firebase Auth로 교체)
-    if (email === 'teacher@school.com' && password === 'password') {
-      localStorage.setItem(STORAGE_KEYS.CURRENT_TEACHER, 'teacher1');
-      router.push('/teacher/dashboard');
-    } else {
-      setError('이메일 또는 비밀번호가 올바르지 않습니다.');
-    }
-  };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md space-y-6 bg-white p-8 rounded-lg shadow">
+    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-lime-50">
+      <div className="w-full max-w-md space-y-8 bg-white p-12 rounded-2xl shadow-2xl border border-gray-100">
         <div className="text-center">
-          <h1 className="text-3xl font-bold mb-2">🏐 DodgeballHub</h1>
-          <h2 className="text-xl font-semibold text-gray-700">교사 로그인</h2>
+          <div className="text-6xl mb-4">🏐</div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">DodgeballHub</h1>
+          <p className="text-lg text-gray-600">교사 로그인</p>
         </div>
 
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-            {error}
-          </div>
-        )}
-
         <div className="space-y-4">
-          <div>
-            <Label htmlFor="email">이메일</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="teacher@school.com"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="password">비밀번호</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="password"
-            />
-          </div>
-
-          <Button onClick={handleLogin} className="w-full">
-            로그인
-          </Button>
-
-          {/* 구분선 */}
-          <div className="relative flex items-center gap-2 my-4">
-            <div className="flex-1 border-t border-gray-300"></div>
-            <span className="text-sm text-gray-500">또는</span>
-            <div className="flex-1 border-t border-gray-300"></div>
-          </div>
-
-          {/* Google 로그인 버튼 */}
           <Button
             onClick={() => signIn('google', { callbackUrl: '/teacher/dashboard' })}
-            variant="outline"
-            className="w-full flex items-center justify-center gap-3 border-gray-300 hover:bg-gray-50"
+            className="w-full flex items-center justify-center gap-3 h-14 text-lg shadow-lg hover:shadow-xl transition-all duration-200"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" viewBox="0 0 24 24">
               <path
                 fill="#4285F4"
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -99,15 +37,13 @@ export default function TeacherLoginPage() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            Google로 로그인
+            Google 계정으로 로그인
           </Button>
-        </div>
 
-        <div className="text-sm text-gray-500 text-center space-y-1">
-          <p>Mock 계정으로 로그인하세요:</p>
-          <p className="font-mono bg-gray-100 p-2 rounded">
-            teacher@school.com / password
-          </p>
+          <div className="text-sm text-gray-500 text-center mt-6 p-4 bg-blue-50 rounded-lg">
+            <p className="font-medium text-gray-700 mb-1">✨ Firebase + NextAuth 인증</p>
+            <p>Google 계정으로 안전하게 로그인하세요</p>
+          </div>
         </div>
       </div>
     </main>

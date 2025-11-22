@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -10,12 +11,11 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { TeamDetailModal } from '@/components/TeamDetailModal';
 import { getClasses, getTeams, createGame, getStudentsByClassIds } from '@/lib/dataService';
-import { STORAGE_KEYS } from '@/lib/mockData';
 import { Class, Team, Student, OuterCourtRule, BallAddition, GameSettings } from '@/types';
 
 export default function NewGamePage() {
   const router = useRouter();
-  const [teacherId, setTeacherId] = useState<string>('');
+  const { data: session, status } = useSession();
   const [allClasses, setAllClasses] = useState<Class[]>([]);
   const [allTeams, setAllTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,17 +33,22 @@ export default function NewGamePage() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [session, status]);
 
   const loadData = async () => {
     try {
+      // 세션 로딩 중이면 대기
+      if (status === 'loading') {
+        return;
+      }
+
       // 로그인 체크
-      const currentTeacherId = localStorage.getItem(STORAGE_KEYS.CURRENT_TEACHER);
-      if (!currentTeacherId) {
+      if (status === 'unauthenticated' || !session?.user?.id) {
         router.push('/teacher/login');
         return;
       }
-      setTeacherId(currentTeacherId);
+
+      const currentTeacherId = session.user.id;
 
       // 모든 학급과 팀 불러오기
       const classList = await getClasses(currentTeacherId);

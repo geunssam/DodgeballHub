@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getClasses, deleteClass, getGamesByTeacherId, deleteGame, getStudents, updateClass, getTeams, migrateStudentStatsFields } from '@/lib/dataService';
-import { STORAGE_KEYS } from '@/lib/mockData';
 import { Class, Game, Student, Team, FinishedGame } from '@/types';
 import { ClassCard } from '@/components/teacher/ClassCard';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -18,21 +18,23 @@ import BadgeCollection from '@/components/badge/BadgeCollection';
 import { ClassRankingWidget } from '@/components/teacher/ClassRankingWidget';
 import { ClassDetailRankingModal } from '@/components/teacher/ClassDetailRankingModal';
 import { ClassRankingData } from '@/types';
+import CreateClassModal from '@/components/teacher/CreateClassModal';
 
 export default function TeacherDashboardPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [classes, setClasses] = useState<Class[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [dashboardView, setDashboardView] = useState<'dashboard' | 'classes' | 'games' | 'stats' | 'badges' | 'rankings'>('dashboard');
-  const [teacherId, setTeacherId] = useState<string>('');
 
   // 모달 상태
   const [showGameModeModal, setShowGameModeModal] = useState(false);
   const [showQuickGameModal, setShowQuickGameModal] = useState(false);
   const [showSelectedGamesModal, setShowSelectedGamesModal] = useState(false);
+  const [showCreateClassModal, setShowCreateClassModal] = useState(false);
 
   // 학급별 학생 데이터
   const [studentsByClass, setStudentsByClass] = useState<Record<string, Student[]>>({});
@@ -52,20 +54,23 @@ export default function TeacherDashboardPage() {
     // 데이터 마이그레이션 실행 (앱 시작 시 한 번만)
     migrateStudentStatsFields();
 
+    // 세션 로딩 중이면 대기
+    if (status === 'loading') {
+      return;
+    }
+
     // 로그인 체크
-    const currentTeacherId = localStorage.getItem(STORAGE_KEYS.CURRENT_TEACHER);
-    if (!currentTeacherId) {
+    if (status === 'unauthenticated' || !session?.user?.id) {
       router.push('/teacher/login');
       return;
     }
 
-    setTeacherId(currentTeacherId);
-
     // 학급, 경기, 팀 목록 불러오기
-    loadClasses(currentTeacherId);
-    loadGames(currentTeacherId);
-    loadTeams(currentTeacherId);
-  }, [router]);
+    const teacherId = session.user.id;
+    loadClasses(teacherId);
+    loadGames(teacherId);
+    loadTeams(teacherId);
+  }, [router, session, status]);
 
   // URL 쿼리 파라미터 처리를 위한 별도 useEffect
   useEffect(() => {
@@ -150,9 +155,8 @@ export default function TeacherDashboardPage() {
       await deleteClass(classId);
 
       // 현재 teacherId 가져오기
-      const teacherId = localStorage.getItem(STORAGE_KEYS.CURRENT_TEACHER);
-      if (teacherId) {
-        await loadClasses(teacherId);
+      if (session?.user?.id) {
+        await loadClasses(session.user.id);
       }
 
       alert('학급이 삭제되었습니다.');
@@ -170,9 +174,8 @@ export default function TeacherDashboardPage() {
       await updateClass(classId, { ...classToUpdate, name: newName });
 
       // 현재 teacherId 가져오기
-      const teacherId = localStorage.getItem(STORAGE_KEYS.CURRENT_TEACHER);
-      if (teacherId) {
-        await loadClasses(teacherId);
+      if (session?.user?.id) {
+        await loadClasses(session.user.id);
       }
     } catch (error) {
       console.error('Failed to rename class:', error);
@@ -181,8 +184,8 @@ export default function TeacherDashboardPage() {
   };
 
   const handleDeleteGame = async (gameId: string, gameTitle: string, isCompleted: boolean) => {
-    const status = isCompleted ? '완료된' : '진행 중인';
-    if (!confirm(`정말로 "${gameTitle}" ${status} 경기를 삭제하시겠습니까?\n\n⚠️ 이 작업은 되돌릴 수 없습니다.`)) {
+    const gameStatus = isCompleted ? '완료된' : '진행 중인';
+    if (!confirm(`정말로 "${gameTitle}" ${gameStatus} 경기를 삭제하시겠습니까?\n\n⚠️ 이 작업은 되돌릴 수 없습니다.`)) {
       return;
     }
 
@@ -190,9 +193,8 @@ export default function TeacherDashboardPage() {
       await deleteGame(gameId);
 
       // 현재 teacherId 가져오기
-      const teacherId = localStorage.getItem(STORAGE_KEYS.CURRENT_TEACHER);
-      if (teacherId) {
-        await loadGames(teacherId);
+      if (session?.user?.id) {
+        await loadGames(session.user.id);
       }
 
       // FloatingControl에게 경기 삭제 알림
@@ -375,17 +377,17 @@ export default function TeacherDashboardPage() {
                 </Button>
                 <h2 className="text-2xl font-bold text-foreground">👥 학급 관리</h2>
               </div>
-              <Link href="/teacher/create-class">
-                <Button>+ 학급 생성</Button>
-              </Link>
+              <Button onClick={() => setShowCreateClassModal(true)}>
+                + 학급 생성
+              </Button>
             </div>
 
             {classes.length === 0 ? (
               <Card className="p-8 text-center">
                 <p className="text-gray-500 mb-4">아직 생성된 학급이 없습니다.</p>
-                <Link href="/teacher/create-class">
-                  <Button>첫 학급 만들기</Button>
-                </Link>
+                <Button onClick={() => setShowCreateClassModal(true)}>
+                  첫 학급 만들기
+                </Button>
               </Card>
             ) : (
               <>
@@ -692,7 +694,7 @@ export default function TeacherDashboardPage() {
         isOpen={showQuickGameModal}
         onClose={() => setShowQuickGameModal(false)}
         teams={teams}
-        teacherId={teacherId}
+        teacherId={session?.user?.id || ''}
       />
 
       <SelectedGamesModal
@@ -701,6 +703,16 @@ export default function TeacherDashboardPage() {
         selectedGames={games.filter(g => g.isCompleted && selectedGameIds.includes(g.id)) as FinishedGame[]}
         teams={teams}
         students={allStudents}
+      />
+
+      <CreateClassModal
+        isOpen={showCreateClassModal}
+        onClose={() => setShowCreateClassModal(false)}
+        teacherId={session?.user?.id || ''}
+        onClassCreated={async (classId) => {
+          await loadClasses(session?.user?.id || '');
+          setShowCreateClassModal(false);
+        }}
       />
     </div>
   );

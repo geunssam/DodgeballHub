@@ -1,5 +1,6 @@
 import NextAuth, { AuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
+import { createOrUpdateTeacher } from '@/lib/firestoreService';
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -13,7 +14,19 @@ export const authOptions: AuthOptions = {
   },
   callbacks: {
     async signIn({ user, account, profile }) {
-      // 구글 로그인 성공 시 추가 로직
+      // Google 로그인 성공 시 Firestore에 교사 정보 저장/업데이트
+      if (user.email && user.id) {
+        try {
+          await createOrUpdateTeacher(user.id, {
+            email: user.email,
+            name: user.name || '',
+            createdAt: new Date().toISOString(),
+          });
+        } catch (error) {
+          console.error('Error saving teacher to Firestore:', error);
+          // 로그인은 계속 진행 (Firestore 오류가 로그인을 막지 않도록)
+        }
+      }
       return true;
     },
     async session({ session, token }) {

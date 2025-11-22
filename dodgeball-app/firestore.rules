@@ -1,0 +1,19 @@
+rules_version = '2';
+
+/**
+ * Firestore Security Rules for DodgeballHub
+ *
+ * 개발 환경용 - 모든 접근 허용 (NextAuth 사용 중)
+ * TODO: 프로덕션 배포 전 Firebase Auth 연동 및 보안 강화 필요
+ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===== 개발 환경: 모든 접근 허용 =====
+    // NextAuth를 사용하므로 Firebase Auth 토큰이 없음
+    // 프로덕션에서는 Firebase Auth로 전환하거나 custom token 연동 필요
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

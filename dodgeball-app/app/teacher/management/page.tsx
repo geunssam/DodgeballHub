@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -10,15 +11,16 @@ import { TeamCard } from '@/components/teacher/TeamCard';
 import { StudentCard } from '@/components/teacher/StudentCard';
 import { ClassDetailModal } from '@/components/teacher/ClassDetailModal';
 import { TeamDetailModal } from '@/components/teacher/TeamDetailModal';
+import CreateClassModal from '@/components/teacher/CreateClassModal';
 import { getClasses, getStudents, getTeams, deleteClass, deleteTeam, updateClass, updateTeam, createTeam } from '@/lib/dataService';
 import { randomTeamAssignment, assignTeamColor } from '@/lib/teamUtils';
 import { Class, Student, Team } from '@/types';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { calculateClassStats, calculateTeamStats } from '@/lib/statsHelpers';
-import { STORAGE_KEYS } from '@/lib/mockData';
 
 export default function ManagementPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [classes, setClasses] = useState<Class[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [studentsByClass, setStudentsByClass] = useState<Record<string, Student[]>>({});
@@ -38,18 +40,27 @@ export default function ManagementPage() {
   // 모달 상태
   const [isClassDetailModalOpen, setIsClassDetailModalOpen] = useState(false);
   const [selectedClassForModal, setSelectedClassForModal] = useState<Class | null>(null);
+  const [showAddStudentsModal, setShowAddStudentsModal] = useState(false);
+  const [selectedClassForAddStudents, setSelectedClassForAddStudents] = useState<Class | null>(null);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [session, status]);
 
   const loadData = async () => {
     try {
-      const teacherId = localStorage.getItem(STORAGE_KEYS.CURRENT_TEACHER);
-      if (!teacherId) {
+      // 세션 로딩 중이면 대기
+      if (status === 'loading') {
+        return;
+      }
+
+      // 로그인 체크
+      if (status === 'unauthenticated' || !session?.user?.id) {
         router.push('/teacher/login');
         return;
       }
+
+      const teacherId = session.user.id;
 
       const [classList, teamList] = await Promise.all([
         getClasses(teacherId),
@@ -173,11 +184,12 @@ export default function ManagementPage() {
       const teamCount = 2;
       const assignedTeams = randomTeamAssignment(students, teamCount);
 
-      const teacherId = localStorage.getItem(STORAGE_KEYS.CURRENT_TEACHER);
-      if (!teacherId) {
+      if (!session?.user?.id) {
         alert('로그인 정보를 찾을 수 없습니다.');
         return;
       }
+
+      const teacherId = session.user.id;
 
       for (let i = 0; i < teamCount; i++) {
         const teamName = `${selectedClass.name} 팀${i + 1}`;
@@ -297,15 +309,17 @@ export default function ManagementPage() {
           <div className="flex gap-3 pr-4">
             {/* 현재 탭에 따라 추가 버튼 표시 */}
             {activeTab === 'classes' && (
-              <Link href="/teacher/create-class">
-                <Button
-                  size="default"
-                  className="bg-green-100 text-green-700 hover:bg-green-200 font-semibold"
-                >
-                  <Plus className="w-5 h-5 mr-1" />
-                  새 학급
-                </Button>
-              </Link>
+              <Button
+                size="default"
+                className="bg-green-100 text-green-700 hover:bg-green-200 font-semibold"
+                onClick={() => {
+                  setSelectedClassForAddStudents(null);
+                  setShowAddStudentsModal(true);
+                }}
+              >
+                <Plus className="w-5 h-5 mr-1" />
+                새 학급
+              </Button>
             )}
             {activeTab === 'teams' && (
               <Button
@@ -608,6 +622,26 @@ export default function ManagementPage() {
         classData={selectedClassForModal}
         students={selectedClassForModal ? (studentsByClass[selectedClassForModal.id] || []) : []}
         onRandomTeamGeneration={selectedClassForModal ? () => handleRandomTeamGeneration(selectedClassForModal.id) : undefined}
+        onAddStudents={() => {
+          setSelectedClassForAddStudents(selectedClassForModal);
+          setShowAddStudentsModal(true);
+        }}
+      />
+
+      {/* 학생 추가 모달 */}
+      <CreateClassModal
+        isOpen={showAddStudentsModal}
+        onClose={() => {
+          setShowAddStudentsModal(false);
+          setSelectedClassForAddStudents(null);
+        }}
+        teacherId={session?.user?.id || ''}
+        classId={selectedClassForAddStudents?.id}
+        onClassCreated={async () => {
+          await loadData();
+          setShowAddStudentsModal(false);
+          setSelectedClassForAddStudents(null);
+        }}
       />
 
       {/* 팀 상세 모달 */}

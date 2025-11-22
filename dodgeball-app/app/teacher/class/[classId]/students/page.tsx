@@ -405,7 +405,7 @@ ${gradePart},${classPart},10,오태양`;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col pt-16">
       <main className="flex-grow p-6">
         <div className="max-w-6xl mx-auto">
         {/* 헤더 */}
