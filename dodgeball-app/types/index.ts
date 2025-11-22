@@ -241,3 +241,11 @@ export interface TeamAggregatedStats {
   totalScore: number;
   totalScoreAllowed: number;
 }
+
+// ===== 개인정보 동의 관련 =====
+export type {
+  PrivacyConsent,
+  PrivacyPolicySection,
+  ConsentItem,
+  ServiceOperator,
+} from './privacy';

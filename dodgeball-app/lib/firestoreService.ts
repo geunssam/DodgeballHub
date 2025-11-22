@@ -31,6 +31,7 @@ import type {
   CustomBadge,
   FinishedGame,
 } from '@/types';
+import type { PrivacyConsent } from '@/types/privacy';
 
 // ===== 교사 (Teacher) =====
 
@@ -498,4 +499,67 @@ export async function updateCustomBadge(
 export async function deleteCustomBadge(badgeId: string): Promise<void> {
   const badgeRef = doc(db, 'customBadges', badgeId);
   await deleteDoc(badgeRef);
+}
+
+// ===== Privacy Consent Operations =====
+
+/**
+ * 개인정보 동의 이력 확인
+ *
+ * @param teacherId - 교사 ID (Google UID)
+ * @param requiredVersion - 요구되는 개인정보 처리방침 버전
+ * @returns 동의 이력 (없으면 null)
+ */
+export async function checkPrivacyConsent(
+  teacherId: string,
+  requiredVersion: string
+): Promise<PrivacyConsent | null> {
+  try {
+    const consentRef = doc(db, 'privacyConsents', teacherId);
+    const consentSnap = await getDoc(consentRef);
+
+    if (!consentSnap.exists()) {
+      return null;
+    }
+
+    const consent = consentSnap.data() as PrivacyConsent;
+
+    // 버전 확인
+    if (consent.version !== requiredVersion) {
+      console.warn(
+        `동의 버전 불일치: ${consent.version} !== ${requiredVersion}`
+      );
+      return null;
+    }
+
+    return consent;
+  } catch (error) {
+    console.error('개인정보 동의 확인 중 오류:', error);
+    throw error;
+  }
+}
+
+/**
+ * 개인정보 동의 저장
+ *
+ * @param consentData - 동의 정보 (agreedAt 제외)
+ */
+export async function savePrivacyConsent(
+  consentData: Omit<PrivacyConsent, 'agreedAt'>
+): Promise<void> {
+  try {
+    const consentRef = doc(db, 'privacyConsents', consentData.teacherId);
+
+    const dataToSave: PrivacyConsent = {
+      ...consentData,
+      agreedAt: new Date().toISOString(),
+    };
+
+    await setDoc(consentRef, dataToSave);
+
+    console.log('✅ 개인정보 동의 저장 완료:', consentData.teacherId);
+  } catch (error) {
+    console.error('개인정보 동의 저장 중 오류:', error);
+    throw error;
+  }
 }

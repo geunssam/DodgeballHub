@@ -4,6 +4,7 @@ import "./globals.css";
 import { MigrationProvider } from "@/components/MigrationProvider";
 import { LayoutWrapper } from "@/components/LayoutWrapper";
 import SessionProvider from "@/app/providers/SessionProvider";
+import { PrivacyConsentGuard } from "@/components/privacy/PrivacyConsentGuard";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,9 +33,11 @@ export default function RootLayout({
       >
         <SessionProvider>
           <MigrationProvider>
-            <LayoutWrapper>
-              {children}
-            </LayoutWrapper>
+            <PrivacyConsentGuard>
+              <LayoutWrapper>
+                {children}
+              </LayoutWrapper>
+            </PrivacyConsentGuard>
           </MigrationProvider>
         </SessionProvider>
       </body>
