@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Game, Student, FinishedGame, GameHistoryEntry, Badge } from '@/types';
-import { getGameById, getStudents, updateGame, updateStudent, getStudentById, updatePlayerHistory, saveFinishedGame, getCurrentTeacherId } from '@/lib/dataService';
+import { getGame, getStudents, updateGame, updateStudent, getStudent, createFinishedGame } from '@/lib/firestoreService';
 import { DodgeballCourt } from '@/components/teacher/DodgeballCourt';
 import { ScoreBoard } from '@/components/teacher/ScoreBoard';
 import { TeamLineupTable } from '@/components/teacher/TeamLineupTable';
@@ -18,6 +19,7 @@ export default function GamePlayPage() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
   const classId = params.classId as string;
   const gameId = searchParams.get('gameId');
 
@@ -44,7 +46,7 @@ export default function GamePlayPage() {
     const handleGameStateChange = async () => {
       if (!gameId) return;
 
-      const game = await getGameById(gameId);
+      const game = await getGame(gameId);
       if (game) {
         setGameData(game);
       }
@@ -62,7 +64,7 @@ export default function GamePlayPage() {
       if (!gameId) return;
 
       const [game, studentList] = await Promise.all([
-        getGameById(gameId),
+        getGame(gameId),
         getStudents(classId)
       ]);
 
@@ -252,7 +254,7 @@ export default function GamePlayPage() {
     if (!confirm('경기를 종료하시겠습니까?')) return;
 
     try {
-      const teacherId = getCurrentTeacherId();
+      const teacherId = session?.user?.id;
       if (!teacherId) {
         alert('로그인 정보를 찾을 수 없습니다.');
         return;
@@ -295,7 +297,7 @@ export default function GamePlayPage() {
       const allUpdatedRecords = [];
 
       for (const record of gameData.records) {
-        const student = await getStudentById(record.studentId);
+        const student = await getStudent(record.studentId);
         if (!student) continue;
 
         // 3-1. 배지 체크 및 자동 수여
@@ -337,7 +339,8 @@ export default function GamePlayPage() {
         };
 
         // 3-4. playerHistory 업데이트
-        await updatePlayerHistory(teacherId, record.studentId, gameHistoryEntry);
+        // TODO: Implement updatePlayerHistory in firestoreService
+        // await updatePlayerHistory(teacherId, record.studentId, gameHistoryEntry);
 
         allUpdatedRecords.push({
           studentId: record.studentId,
@@ -385,7 +388,7 @@ export default function GamePlayPage() {
         isCompleted: true
       };
 
-      await saveFinishedGame(teacherId, finishedGame);
+      await createFinishedGame(finishedGame);
       console.log('💾 finishedGames 저장 완료');
 
       // ===== 6. 현재 경기를 완료 상태로 업데이트 =====

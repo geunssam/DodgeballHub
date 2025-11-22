@@ -563,3 +563,47 @@ export async function savePrivacyConsent(
     throw error;
   }
 }
+
+// ===== Student Code Lookups =====
+
+/**
+ * 학생을 accessCode로 조회 (기존 코드 시스템: "3-5-김철수")
+ */
+export async function getStudentByAccessCode(
+  accessCode: string
+): Promise<Student | null> {
+  const q = query(
+    collection(db, 'students'),
+    where('accessCode', '==', accessCode)
+  );
+
+  const snapshot = await getDocs(q);
+
+  if (snapshot.empty) {
+    return null;
+  }
+
+  const doc = snapshot.docs[0];
+  return { id: doc.id, ...doc.data() } as Student;
+}
+
+/**
+ * 학생을 studentCode로 조회 (신규 코드 시스템: "abc123-159001")
+ */
+export async function getStudentByStudentCode(
+  studentCode: string
+): Promise<Student | null> {
+  const q = query(
+    collection(db, 'students'),
+    where('studentCode', '==', studentCode)
+  );
+
+  const snapshot = await getDocs(q);
+
+  if (snapshot.empty) {
+    return null;
+  }
+
+  const doc = snapshot.docs[0];
+  return { id: doc.id, ...doc.data() } as Student;
+}

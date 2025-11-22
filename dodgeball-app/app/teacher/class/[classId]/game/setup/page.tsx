@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { getClassById, getTeams, getStudents, createGame, getClasses, getStudentsByClassIds } from '@/lib/dataService';
+import { getClass, getTeams, getStudents, createGame, getClasses, getStudentsByClassIds } from '@/lib/firestoreService';
 import { Class, Team, Student, OuterCourtRule, BallAddition, GameSettings } from '@/types';
 import { ClassSelector } from '@/components/teacher/ClassSelector';
 
@@ -44,7 +44,7 @@ export default function GameSetupPage() {
 
   const loadData = async () => {
     try {
-      const classInfo = await getClassById(classId);
+      const classInfo = await getClass(classId);
       if (!classInfo) {
         alert('학급을 찾을 수 없습니다.');
         router.push('/teacher/dashboard');
@@ -68,14 +68,14 @@ export default function GameSetupPage() {
 
   const loadStudentsAndTeams = async () => {
     try {
+      if (!classData) return;
+
       // 선택된 학급들의 학생과 팀 불러오기
       const studentList = await getStudentsByClassIds(selectedClassIds);
       setStudents(studentList);
 
-      // 각 학급의 팀 불러오기
-      const teamPromises = selectedClassIds.map(id => getTeams(id));
-      const teamLists = await Promise.all(teamPromises);
-      const allTeams = teamLists.flat();
+      // 교사의 모든 팀 불러오기 (팀은 교사 단위로 저장됨)
+      const allTeams = await getTeams(classData.teacherId);
       setTeams(allTeams);
 
       // 기본 팀 선택 초기화
@@ -169,8 +169,7 @@ export default function GameSetupPage() {
         }))
       );
 
-      const newGame = await createGame({
-        teacherId: classData!.teacherId,
+      const newGameId = await createGame(classData!.teacherId, {
         classIds: selectedClassIds,
         hostClassId: classId,
         date: new Date().toISOString(),
@@ -183,6 +182,8 @@ export default function GameSetupPage() {
         isCompleted: false,
         isPaused: false // 타이머 자동 시작
       });
+
+      const newGame = { id: newGameId };
 
       // 경기 진행 페이지로 이동
       router.push(`/teacher/class/${classId}/game/play?gameId=${newGame.id}`);

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
-import { getStudentByAccessCode, getStudentByStudentCode } from '@/lib/dataService';
+import { getStudentByAccessCode, getStudentByStudentCode } from '@/lib/firestoreService';
 import { StudentDashboard } from '@/components/student/StudentDashboard';
 import { Student } from '@/types';
 import { isValidStudentCode } from '@/lib/studentCodeGenerator';
